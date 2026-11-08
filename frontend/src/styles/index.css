@@ -1,0 +1,228 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/plus-jakarta-sans';
+@import '@fontsource-variable/jetbrains-mono';
+
+/* Dark mode is class based: <html class="dark"> */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ------------------------------------------------------------------ */
+/* 1. Raw design tokens (do not use directly in pages)                 */
+/* ------------------------------------------------------------------ */
+@theme {
+  --font-sans: 'Plus Jakarta Sans Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, monospace;
+
+  /* Brand: warm orange scale, anchored on #F28C45 (brand-500) */
+  --color-brand-50: #fff6ee;
+  --color-brand-100: #ffe9d6;
+  --color-brand-200: #fdd1ac;
+  --color-brand-300: #fab680;
+  --color-brand-400: #f6a05f;
+  --color-brand-500: #f28c45;
+  --color-brand-600: #e07430;
+  --color-brand-700: #bb5b24;
+  --color-brand-800: #944924;
+  --color-brand-900: #783d21;
+
+  /* Radius scale */
+  --radius-xs: 0.375rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.75rem;
+
+  /* Motion */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-fade-in: fade-in 250ms var(--ease-out-soft) both;
+  --animate-rise-in: rise-in 300ms var(--ease-out-soft) both;
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes rise-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* 2. Semantic tokens, switched by theme                               */
+/* ------------------------------------------------------------------ */
+:root {
+  color-scheme: light;
+
+  --surface-app: #f3f3f1;
+  --surface-card: #ffffff;
+  --surface-muted: #ecece9;
+  --surface-raised: #ffffff;
+  --line: #e3e3de;
+  --line-strong: #d0d0ca;
+
+  --ink: #1f2124;
+  --ink-soft: #5b5f66;
+  --ink-faint: #8e929a;
+  --ink-on-brand: #ffffff;
+
+  --success: #2f8f5b;
+  --success-soft: #e4f4ea;
+  --warning: #b7791f;
+  --warning-soft: #fdf1d9;
+  --danger: #c8412f;
+  --danger-soft: #fbe6e2;
+  --info: #4f6272;
+  --info-soft: #e6ecf0;
+
+  --brand-soft: var(--color-brand-50);
+  --brand-soft-strong: var(--color-brand-100);
+  --brand-text: var(--color-brand-700);
+  --focus-ring: rgb(242 140 69 / 0.45);
+
+  /* Chart series. Validated for both themes (colour-blind separation, contrast). Revenue = brand orange. */
+  --chart-1: #dd722d;
+  --chart-2: #2a9d6f;
+
+  --shadow-xs: 0 1px 2px rgb(31 33 36 / 0.05);
+  --shadow-sm: 0 1px 2px rgb(31 33 36 / 0.04), 0 2px 8px rgb(31 33 36 / 0.05);
+  --shadow-md: 0 2px 4px rgb(31 33 36 / 0.04), 0 8px 24px rgb(31 33 36 / 0.08);
+  --shadow-lg: 0 4px 8px rgb(31 33 36 / 0.05), 0 20px 48px rgb(31 33 36 / 0.14);
+  --shadow-brand: 0 6px 18px rgb(242 140 69 / 0.32);
+}
+
+.dark {
+  color-scheme: dark;
+
+  --surface-app: #111214;
+  --surface-card: #1a1b1e;
+  --surface-muted: #222326;
+  --surface-raised: #222326;
+  --line: #2b2c31;
+  --line-strong: #3a3b41;
+
+  --ink: #f1f1ee;
+  --ink-soft: #b0b3ba;
+  --ink-faint: #7d8088;
+  --ink-on-brand: #1a1108;
+
+  --success: #5fc48a;
+  --success-soft: #16271e;
+  --warning: #e3b04b;
+  --warning-soft: #2c2312;
+  --danger: #ef7b69;
+  --danger-soft: #2f1a17;
+  --info: #9db3c4;
+  --info-soft: #1c242b;
+
+  --brand-soft: rgb(242 140 69 / 0.12);
+  --brand-soft-strong: rgb(242 140 69 / 0.2);
+  --brand-text: var(--color-brand-300);
+  --focus-ring: rgb(246 160 95 / 0.5);
+  --chart-1: #dd722d;
+  --chart-2: #2a9d6f;
+
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.35), 0 2px 8px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 2px 4px rgb(0 0 0 / 0.35), 0 8px 24px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 4px 8px rgb(0 0 0 / 0.4), 0 20px 48px rgb(0 0 0 / 0.55);
+  --shadow-brand: 0 6px 18px rgb(242 140 69 / 0.22);
+}
+
+/* ------------------------------------------------------------------ */
+/* 3. Expose semantic tokens as Tailwind utilities                     */
+/*    bg-surface-card, text-ink-soft, border-line, shadow-md ...       */
+/* ------------------------------------------------------------------ */
+@theme inline {
+  --color-surface-app: var(--surface-app);
+  --color-surface-card: var(--surface-card);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-raised: var(--surface-raised);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-ink-on-brand: var(--ink-on-brand);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-soft-strong: var(--brand-soft-strong);
+  --color-brand-text: var(--brand-text);
+  --color-focus: var(--focus-ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-brand: var(--shadow-brand);
+}
+
+/* ------------------------------------------------------------------ */
+/* 4. Shared utilities                                                 */
+/* ------------------------------------------------------------------ */
+@utility bg-brand-gradient {
+  background-image: linear-gradient(135deg, var(--color-brand-400) 0%, var(--color-brand-600) 100%);
+}
+
+@utility bg-surface-gradient {
+  background-image: linear-gradient(180deg, var(--surface-card) 0%, var(--surface-muted) 180%);
+}
+
+@utility focus-ring {
+  &:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+@utility tabular {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------------ */
+/* 5. Base                                                             */
+/* ------------------------------------------------------------------ */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--surface-app);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-feature-settings: 'ss01', 'cv11';
+    -webkit-font-smoothing: antialiased;
+    transition:
+      background-color 250ms var(--ease-out-soft),
+      color 250ms var(--ease-out-soft);
+  }
+
+  ::selection {
+    background: var(--color-brand-200);
+    color: #1f2124;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
