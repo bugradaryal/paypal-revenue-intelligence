@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,8 +27,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("Default")
-            ?? throw new InvalidOperationException("ConnectionStrings:Default is not configured.");
+        var connectionString = DatabaseConnectionStringResolver.Resolve(configuration);
 
         // Proje kuralı: PayPal işlemleri yalnızca Sandbox üzerinden yapılır.
         var paypalEnvironment = configuration[$"{PayPalSettings.SectionName}:Environment"] ?? PayPalEnvironment.Sandbox;
@@ -42,7 +42,14 @@ public static class DependencyInjection
         services.Configure<SeedSettings>(configuration.GetSection(SeedSettings.SectionName));
         services.Configure<PayPalSettings>(configuration.GetSection(PayPalSettings.SectionName));
         services.Configure<OpenAiSettings>(configuration.GetSection(OpenAiSettings.SectionName));
-        services.AddDataProtection();
+        var dataProtection = services.AddDataProtection();
+        var keyRingPath = configuration["DataProtection:KeyRingPath"];
+        if (!string.IsNullOrWhiteSpace(keyRingPath))
+        {
+            var keyRingDirectory = new DirectoryInfo(Path.GetFullPath(keyRingPath));
+            Directory.CreateDirectory(keyRingDirectory.FullName);
+            dataProtection.PersistKeysToFileSystem(keyRingDirectory);
+        }
         services.AddSingleton<PayPalCredentialStore>();
         services.AddScoped<IPayPalCredentialService, PayPalCredentialService>();
 

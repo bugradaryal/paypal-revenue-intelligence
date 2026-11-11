@@ -43,6 +43,57 @@ dotnet user-secrets set "Seed:AdminPassword" "<LOCAL_ADMIN_PASSWORD>" --project 
 For hosted environments, provide secrets through the platform's secret manager or environment variables.
 If a credential was ever committed or pushed, removing the file from Git is not enough: rotate that credential.
 
+## Docker API and Render deployment
+
+The API Dockerfile is `backend/src/PRI.Api/Dockerfile`. Its build context must be the `backend` directory
+because the API references the other backend projects. The frontend is not included in the Docker image.
+
+### Run the API and PostgreSQL locally
+
+Copy `.env.example` to `.env` (PowerShell: `Copy-Item .env.example .env`), replace every placeholder with a
+strong value, then run from the repository root:
+
+```powershell
+docker compose up --build -d
+```
+
+The API is available at `http://localhost:5000`; its database is PostgreSQL with pgvector. Migrations run on
+startup and the configured admin user is seeded. The frontend can continue running separately on port 5173.
+To stop the containers, run `docker compose down`; database and PayPal credential data remain in Docker volumes.
+
+### Deploy only the API to Render
+
+Create a Render **PostgreSQL** database and a **Docker Web Service** in the same region. Configure the Web
+Service as follows:
+
+| Render setting | Value |
+|---|---|
+| Root Directory | `backend` |
+| Dockerfile Path | `src/PRI.Api/Dockerfile` |
+| Health Check Path | `/health` |
+| Persistent disk mount path | `/var/lib/recoup` |
+
+Set these Web Service environment variables using Render's secret fields where appropriate:
+
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | The database's **Internal Database URL** |
+| `Database__InitializeOnStartup` | `true` |
+| `ASPNETCORE_ENVIRONMENT` | `Production` |
+| `Jwt__Key` | A new random secret with at least 32 characters |
+| `Seed__AdminEmail` | The initial administrator's email |
+| `Seed__AdminPassword` | A strong initial administrator password |
+| `Seed__AdminDisplayName` | The administrator's display name |
+| `PayPal__CredentialStorePath` | `/var/lib/recoup/paypal-credentials.dat` |
+| `DataProtection__KeyRingPath` | `/var/lib/recoup/dp-keys` |
+| `Cors__AllowedOrigins__0` | The deployed frontend's HTTPS origin |
+
+The API converts Render's PostgreSQL URL to an Npgsql connection string and requires TLS for URL-based
+connections. Startup applies EF Core migrations. PayPal credentials saved in Settings and the Data Protection
+key ring are stored on the persistent disk; without it, those files are lost on restart or deploy. Render
+persistent disks require a paid Web Service plan. Do not put database credentials, JWT keys, or PayPal secrets
+in the repository.
+
 ## Frontend structure (as of Phase 3)
 
 | Path | Purpose |
