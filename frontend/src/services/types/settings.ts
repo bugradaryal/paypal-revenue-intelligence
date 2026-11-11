@@ -74,4 +74,5 @@ export interface PayPalTestConnectionResult {
 export interface SavePayPalCredentialsRequest {
   clientId: string
   clientSecret: string
+  webhookId: string
 }

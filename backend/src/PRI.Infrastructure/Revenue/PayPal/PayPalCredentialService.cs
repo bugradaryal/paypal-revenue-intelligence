@@ -11,7 +11,16 @@ public sealed class PayPalCredentialService(
         SavePayPalCredentialsRequest request,
         CancellationToken cancellationToken)
     {
-        await credentialStore.SaveAsync(request.ClientId.Trim(), request.ClientSecret, cancellationToken);
+        await tokenProvider.ValidateCredentialsAsync(
+            request.ClientId.Trim(),
+            request.ClientSecret,
+            cancellationToken);
+
+        await credentialStore.SaveAsync(
+            request.ClientId.Trim(),
+            request.ClientSecret,
+            request.WebhookId?.Trim() ?? string.Empty,
+            cancellationToken);
         tokenProvider.Invalidate();
         return new PayPalCredentialsSavedDto(credentialStore.IsConfigured);
     }

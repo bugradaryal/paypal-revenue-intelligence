@@ -41,13 +41,23 @@ public sealed class PayPalAccessTokenProvider(
                 return cached;
             }
 
-            return await RequestTokenAsync(cancellationToken);
+            if (!credentialStore.IsConfigured)
+            {
+                throw new BusinessRuleException(
+                    "paypal_not_configured",
+                    "PayPal credentials have not been configured.");
+            }
+
+            return await RequestTokenAsync(credentialStore.ClientId, credentialStore.ClientSecret, cancellationToken);
         }
         finally
         {
             _gate.Release();
         }
     }
+
+    public Task ValidateCredentialsAsync(string clientId, string clientSecret, CancellationToken cancellationToken) =>
+        RequestTokenAsync(clientId, clientSecret, cancellationToken);
 
     private bool TryGetCachedToken(out string token)
     {
@@ -62,16 +72,12 @@ public sealed class PayPalAccessTokenProvider(
         return false;
     }
 
-    private async Task<string> RequestTokenAsync(CancellationToken cancellationToken)
+    private async Task<string> RequestTokenAsync(
+        string clientId,
+        string clientSecret,
+        CancellationToken cancellationToken)
     {
-        if (!credentialStore.IsConfigured)
-        {
-            throw new BusinessRuleException(
-                "paypal_not_configured",
-                "PayPal credentials have not been configured.");
-        }
-
-        var credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{credentialStore.ClientId}:{credentialStore.ClientSecret}"));
+        var credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{clientId}:{clientSecret}"));
 
         using var request = new HttpRequestMessage(HttpMethod.Post, "v1/oauth2/token")
         {

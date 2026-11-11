@@ -171,11 +171,14 @@ Every visible string goes through i18n (EN, DE, TR, ES). No hardcoded UI text, n
 
 In real data mode, **Settings** shows the configured PayPal Sandbox connection and last synchronization result.
 Admin users can test OAuth authentication and import the previous 30 days of transactions; a successful sync
-refreshes revenue data. Enter and save Sandbox credentials directly in the Settings page; the API stores them
-encrypted in its local application data and never returns the secret. Saving new credentials replaces the old
-ones. The current version supports one Sandbox business account only; Live and multi-account OAuth are not
-supported. For a multi-instance deployment, configure a shared protected credential-store path and persist the
-ASP.NET Core Data Protection key ring securely across restarts.
+refreshes revenue data. Client ID and Secret are sufficient for connection tests and manual synchronization.
+Webhook ID is optional and only needed to receive automatic PayPal notifications: create a webhook in the Sandbox
+app pointed at the public API URL ending in `/api/v1/webhooks/paypal`, select payment capture events, then enter
+its ID in Settings. The API stores these values encrypted in its local application data and never returns them.
+Saving new values replaces the old ones. The current
+version supports one Sandbox business account only; Live and multi-account OAuth are not supported. For a
+multi-instance deployment, configure a shared protected credential-store path and persist the ASP.NET Core Data
+Protection key ring securely across restarts.
 
 ## Switching between mock and backend demo data
 

@@ -216,6 +216,7 @@ function PayPalConnectionCard() {
   const sync = useSyncPayPalTransactions()
   const [clientId, setClientId] = useState('')
   const [clientSecret, setClientSecret] = useState('')
+  const [webhookId, setWebhookId] = useState('')
   const data = connection.data
   const latestSync = sync.data ?? data?.latestSync
   const connected = test.data?.connected ?? data?.connected ?? false
@@ -251,11 +252,12 @@ function PayPalConnectionCard() {
   function savePayPalCredentials(event: FormEvent) {
     event.preventDefault()
     saveCredentials.mutate(
-      { clientId: clientId.trim(), clientSecret },
+      { clientId: clientId.trim(), clientSecret, webhookId: webhookId.trim() },
       {
         onSuccess: () => {
           setClientId('')
           setClientSecret('')
+          setWebhookId('')
           test.reset()
           toast({ tone: 'success', title: t('settings.paypal.credentialsSaved') })
         },
@@ -346,6 +348,17 @@ function PayPalConnectionCard() {
                   />
                 )}
               </Field>
+              <Field label={t('settings.paypal.webhookIdOptional')}>
+                {({ id }) => (
+                  <Input
+                    id={id}
+                    value={webhookId}
+                    onChange={(event) => setWebhookId(event.target.value)}
+                    autoComplete="off"
+                  />
+                )}
+              </Field>
+              <p className="self-end pb-2 text-xs text-ink-soft">{t('settings.paypal.webhookOptionalHelp')}</p>
             </div>
             <p className="text-xs text-ink-soft">{t('settings.paypal.credentialsUpdateHelp')}</p>
             <div>

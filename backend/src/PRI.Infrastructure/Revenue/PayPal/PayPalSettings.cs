@@ -19,7 +19,7 @@ public sealed class PayPalSettings
     /// <summary>Optional location for encrypted PayPal credentials; defaults to the current user's local app data.</summary>
     public string CredentialStorePath { get; init; } = string.Empty;
 
-    /// <summary>PayPal Developer Dashboard'da app'e webhook eklenince verilen Webhook ID (imza doğrulaması için).</summary>
+    /// <summary>Webhook ID fallback when credentials have not been saved through Settings.</summary>
     public string WebhookId { get; init; } = string.Empty;
 
     public bool IsConfigured =>

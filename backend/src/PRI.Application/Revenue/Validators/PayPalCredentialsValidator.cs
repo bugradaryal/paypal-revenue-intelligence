@@ -9,5 +9,6 @@ public sealed class PayPalCredentialsValidator : AbstractValidator<SavePayPalCre
     {
         RuleFor(x => x.ClientId).NotEmpty().MaximumLength(512);
         RuleFor(x => x.ClientSecret).NotEmpty().MaximumLength(1024);
+        RuleFor(x => x.WebhookId).MaximumLength(512);
     }
 }

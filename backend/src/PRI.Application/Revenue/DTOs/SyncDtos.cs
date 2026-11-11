@@ -35,6 +35,9 @@ public sealed record PayPalTestConnectionDto(
     DateTime TestedAt,
     string? Error);
 
-public sealed record SavePayPalCredentialsRequest(string ClientId, string ClientSecret);
+public sealed record SavePayPalCredentialsRequest(
+    string ClientId,
+    string ClientSecret,
+    string? WebhookId = null);
 
 public sealed record PayPalCredentialsSavedDto(bool Configured);

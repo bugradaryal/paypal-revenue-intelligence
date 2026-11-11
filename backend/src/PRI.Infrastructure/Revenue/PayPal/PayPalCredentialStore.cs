@@ -40,12 +40,17 @@ public sealed class PayPalCredentialStore
         get { lock (_gate) return _stored?.ClientSecret ?? _settings.ClientSecret; }
     }
 
+    public string WebhookId
+    {
+        get { lock (_gate) return _stored?.WebhookId ?? _settings.WebhookId; }
+    }
+
     public bool IsConfigured =>
         !string.IsNullOrWhiteSpace(ClientId) && !string.IsNullOrWhiteSpace(ClientSecret);
 
-    public async Task SaveAsync(string clientId, string clientSecret, CancellationToken cancellationToken)
+    public async Task SaveAsync(string clientId, string clientSecret, string webhookId, CancellationToken cancellationToken)
     {
-        var stored = new StoredCredentials(clientId, clientSecret);
+        var stored = new StoredCredentials(clientId, clientSecret, webhookId);
         var protectedValue = _protector.Protect(JsonSerializer.Serialize(stored));
         var directory = Path.GetDirectoryName(_filePath)
             ?? throw new InvalidOperationException("The PayPal credential store path has no parent directory.");
@@ -86,5 +91,5 @@ public sealed class PayPalCredentialStore
         return Path.Combine(localAppData, "Recoup", "paypal-credentials.dat");
     }
 
-    private sealed record StoredCredentials(string ClientId, string ClientSecret);
+    private sealed record StoredCredentials(string ClientId, string ClientSecret, string? WebhookId = null);
 }

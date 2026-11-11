@@ -4,9 +4,10 @@
 // on the same line or the line above.
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { parse } from '@babel/parser'
 
-const ROOT = new URL('../src', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')
+const ROOT = fileURLToPath(new URL('../src', import.meta.url))
 const SKIP_DIRS = new Set([join(ROOT, 'i18n')])
 const TEXT_ATTRS = new Set([
   'aria-label', 'aria-description', 'placeholder', 'title', 'alt', 'label', 'description', 'hint', 'error',

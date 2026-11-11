@@ -3,7 +3,6 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using PRI.Application.Revenue.Interfaces;
 using PRI.Shared.Exceptions;
 
@@ -13,14 +12,14 @@ namespace PRI.Infrastructure.Revenue.PayPal;
 public sealed class PayPalWebhookVerifier(
     HttpClient http,
     PayPalAccessTokenProvider tokenProvider,
-    IOptions<PayPalSettings> options,
+    PayPalCredentialStore credentialStore,
     ILogger<PayPalWebhookVerifier> logger) : IPayPalWebhookVerifier
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
 
     public async Task<bool> VerifyAsync(PayPalWebhookHeaders headers, string rawEventJson, CancellationToken cancellationToken)
     {
-        var webhookId = options.Value.WebhookId;
+        var webhookId = credentialStore.WebhookId;
         if (string.IsNullOrWhiteSpace(webhookId))
         {
             throw new BusinessRuleException(

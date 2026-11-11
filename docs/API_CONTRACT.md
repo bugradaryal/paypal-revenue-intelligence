@@ -289,8 +289,9 @@ type PayPalConnection = {
 // OAuth errors return connected=false and a safe message; access tokens and secrets are never returned.
 
 // PUT /api/v1/paypal/credentials
-// body: { clientId: string, clientSecret: string } -> { configured: true }
-// Replaces the single stored Sandbox credential pair. Stored encrypted server-side; never returned.
+// body: { clientId: string, clientSecret: string, webhookId?: string } -> { configured: true }
+// Replaces the single stored Sandbox credentials. Webhook ID is optional and only needed for automatic notifications.
+// Values are stored encrypted server-side and never returned.
 
 // POST /api/v1/paypal/sync?days=30 -> SyncRun
 // days: integer 1..90 (default 30). Repeated imports upsert by PayPal identifiers, not duplicates.
