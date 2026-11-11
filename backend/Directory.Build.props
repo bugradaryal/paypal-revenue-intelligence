@@ -1,0 +1,8 @@
+<Project>
+  <!-- Tüm projeler için ortak ayarlar. Hedef .NET sürümü yalnızca burada değiştirilir (Visual Studio 2022 için net8.0). -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+</Project>

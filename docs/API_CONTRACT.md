@@ -1,6 +1,6 @@
 # API Sözleşmesi
 
-**Sürüm:** 0.3 · **Güncelleme:** 2026-11-07 · **Sahip:** Backend
+**Sürüm:** 0.4 · **Güncelleme:** 2026-11-11 · **Sahip:** Backend
 
 Frontend ve backend için tek doğruluk kaynağı. `API_NEEDS.md` ile bu dosya çeliştiğinde bu dosya geçerlidir. Bir endpoint yalnızca **Hazır** bölümündeyse gerçek olarak kullanılır; **Planlı** bölümündekiler için frontend mock adapter kullanır. Her API değişikliği aşağıdaki değişiklik kaydına işlenir.
 
@@ -8,6 +8,7 @@ Frontend ve backend için tek doğruluk kaynağı. `API_NEEDS.md` ile bu dosya �
 
 | Sürüm | Tarih | Değişiklik |
 |---|---|---|
+| 0.4 | 2026-11-11 | PayPal bağlantı durumu, şifreli kimlik bilgisi yönetimi, OAuth bağlantı testi ve idempotent işlem eşitleme uçları eklendi (bölüm 5). |
 | 0.3 | 2026-11-07 | `API_NEEDS.md` yanıtlandı (bölüm 6). **Kırıcı:** para `amount` artık string; sayfalama alanı `totalItems`; sıralama `sortBy`/`sortDir`; enum değerleri snake_case (`user.role`: `admin` / `member`); tüm zaman damgaları `Z` ile biter (`/system/ping` dahil). Gün 2-4 endpoint şemaları "Planlı (şema kabul edildi)" olarak eklendi. |
 | 0.2 | 2026-11-07 | Kimlik doğrulama: `POST /auth/login`, `GET /auth/me`, JWT kuralları. `/health` artık veritabanını da kontrol eder. |
 | 0.1 | 2026-11-07 | İlk sürüm: genel kurallar, hata formatı, `/health`, `/system/ping`. |
@@ -90,6 +91,10 @@ Planlı özel kodlar (`provider_unavailable` gibi) ilgili endpoint hazır olduğ
 | GET | `/health` | Yok | Servis ve veritabanı sağlığı (düz metin) |
 | GET | `/api/v1/system/ping` | Yok | Bağlantı ve CORS testi |
 | POST | `/api/v1/auth/login` | Yok | E-posta ve şifre ile giriş |
+| GET | `/api/v1/paypal/connection` | Admin | PayPal Sandbox bağlantı ve son eşitleme durumu |
+| PUT | `/api/v1/paypal/credentials` | Admin | Sandbox kimlik bilgilerini şifreli saklar; secret yanıtlanmaz |
+| POST | `/api/v1/paypal/test-connection` | Admin | PayPal OAuth kimlik doğrulamasını sınar; token döndürmez |
+| POST | `/api/v1/paypal/sync?days=30` | Admin | PayPal fatura ve işlemlerini idempotent olarak içe aktarır |
 | GET | `/api/v1/auth/me` | Bearer | Token sahibi kullanıcı |
 
 **GET `/api/v1/system/ping`** yanıtı:
@@ -253,7 +258,51 @@ GET /api/v1/gateway/cache/stats · DELETE /api/v1/gateway/cache
 
 Şemaları ilgili gün hazırlanırken eklenecek. Backend'in saklayamadığı hiçbir ayar arayüzde gösterilmemelidir.
 
-**AI Workspace (Gün 3 sonrası, sözleşme 0.4'te netleşecek).** Yön: sunucu tarafında konuşma saklanmaz (MVP); frontend mesaj geçmişini her istekte gönderir. Yanıt POST üzerinden SSE (`text/event-stream`) olarak akar; olay türleri `meta`, `token`, `suggestion` (AI'ın önerdiği aksiyon, yukarıdaki `Suggestion` şekliyle), `usage` (model, sağlayıcı, token, maliyet, cache hit), `done`, `error`. Kesin şema 0.4'e kadar kullanılmamalıdır.
+**PayPal bağlantısı ve eşitleme (Sandbox, tek işletme hesabı; JWT + admin rolü gerekir):**
+
+```ts
+type SyncRun = {
+  id: string;
+  status: "running" | "succeeded" | "failed";
+  startedAt: string;
+  finishedAt: string | null;
+  rangeFrom: string;
+  rangeTo: string;
+  importedPaymentCount: number;
+  importedInvoiceCount: number;
+  skippedCount: number;
+  error: string | null;
+};
+
+// GET /api/v1/paypal/connection
+type PayPalConnection = {
+  configured: boolean;
+  connected: boolean;
+  environment: "sandbox";
+  apiAuthenticationStatus: "authenticated" | "failed" | "not_configured";
+  lastSuccessfulSyncAt: string | null;
+  latestSync: SyncRun | null;
+  error: string | null;
+};
+
+// POST /api/v1/paypal/test-connection -> { connected, environment, testedAt, error }
+// OAuth errors return connected=false and a safe message; access tokens and secrets are never returned.
+
+// PUT /api/v1/paypal/credentials
+// body: { clientId: string, clientSecret: string } -> { configured: true }
+// Replaces the single stored Sandbox credential pair. Stored encrypted server-side; never returned.
+
+// POST /api/v1/paypal/sync?days=30 -> SyncRun
+// days: integer 1..90 (default 30). Repeated imports upsert by PayPal identifiers, not duplicates.
+```
+
+Credentials saved through the Settings page are protected with ASP.NET Core Data Protection and stored under
+the API user's local application data by default. Keep the Data Protection key ring persistent and private;
+for multi-instance deployments configure a shared protected store path and shared key ring. Live mode and
+multi-account OAuth consent are not supported. The Settings page requires `VITE_DATA_SOURCE=real`; mock mode
+explains that PayPal connection actions are unavailable.
+
+**AI Workspace (Gün 3 sonrası, sözleşme 0.5'te netleşecek).** Yön: sunucu tarafında konuşma saklanmaz (MVP); frontend mesaj geçmişini her istekte gönderir. Yanıt POST üzerinden SSE (`text/event-stream`) olarak akar; olay türleri `meta`, `token`, `suggestion` (AI'ın önerdiği aksiyon, yukarıdaki `Suggestion` şekliyle), `usage` (model, sağlayıcı, token, maliyet, cache hit), `done`, `error`. Kesin şema 0.5'e kadar kullanılmamalıdır.
 
 **Diğer planlı uçlar:**
 
@@ -278,7 +327,11 @@ Gün 3  POST /gateway/completions
 | `revenue.listSuggestions(query)` | `GET /revenue/suggestions` | Gün 4 |
 | `revenue.decideSuggestion(id, decision)` | `POST /revenue/suggestions/{id}/decision` | Gün 4 |
 | Settings okuma/yazma | `/gateway/budgets`, `/gateway/routing-rules` | Gün 4 |
-| AI Workspace sohbeti | 0.4'te netleşecek | Gün 4+ |
+| `settings.getPayPalConnection()` | `GET /paypal/connection` | Hazır |
+| `settings.savePayPalCredentials(request)` | `PUT /paypal/credentials` | Hazır |
+| `settings.testPayPalConnection()` | `POST /paypal/test-connection` | Hazır |
+| `settings.syncPayPalTransactions(days)` | `POST /paypal/sync?days=...` | Hazır |
+| AI Workspace sohbeti | 0.5'te netleşecek | Gün 4+ |
 
 ## 6. `API_NEEDS.md` yanıtları
 

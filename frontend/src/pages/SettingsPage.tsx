@@ -2,7 +2,18 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Badge, Button, Card, CardHeader, Dialog, Field, Input, Select, Skeleton, Switch, useToast } from '@/components/ui'
 import { DataTable, EmptyState, MoneyText, type Column } from '@/components/patterns'
-import { useCacheStats, useBudgetSetting, useClearCache, useModelCatalog, useUpdateBudget } from '@/features/settings/queries'
+import {
+  useCacheStats,
+  useBudgetSetting,
+  useClearCache,
+  useModelCatalog,
+  usePayPalConnection,
+  useSavePayPalCredentials,
+  useSyncPayPalTransactions,
+  useTestPayPalConnection,
+  useUpdateBudget,
+} from '@/features/settings/queries'
+import { env } from '@/config/env'
 import { useTheme } from '@/app/theme'
 import { LOCALES, useI18n, type Locale } from '@/i18n'
 import { useErrorMessage } from '@/i18n/useErrorMessage'
@@ -24,10 +35,10 @@ function BudgetCard() {
   const [amount, setAmount] = useState('')
   const [touched, setTouched] = useState(false)
 
-  const saved = budget.data?.limit.amount
-  const currency = budget.data?.limit.currency ?? 'USD'
+  const saved = budget.data?.limit?.amount
+  const currency = budget.data?.limit?.currency ?? 'USD'
   useEffect(() => {
-    if (budget.data !== undefined) setAmount(budget.data?.limit.amount ?? '')
+    if (budget.data !== undefined) setAmount(budget.data?.limit?.amount ?? '')
   }, [budget.data])
 
   const valid = AMOUNT.test(amount) && Number(amount) > 0
@@ -149,10 +160,10 @@ function CacheCard() {
       ) : (
         <div className="flex flex-wrap items-center justify-between gap-4">
           <p className="text-sm">
-            <span className="tabular text-2xl font-bold">{f.number(stats.data.entryCount)}</span>{' '}
+            <span className="tabular text-2xl font-bold">{f.number(stats.data.activeEntries)}</span>{' '}
             <span className="text-ink-soft">{t('settings.cache.entries')}</span>
           </p>
-          <Button variant="secondary" disabled={stats.data.entryCount === 0} onClick={() => setConfirming(true)}>
+          <Button variant="secondary" disabled={!stats.data.enabled || stats.data.activeEntries === 0} onClick={() => setConfirming(true)}>
             {t('settings.cache.clear')}
           </Button>
         </div>
@@ -172,9 +183,9 @@ function CacheCard() {
               loading={clear.isPending}
               onClick={() =>
                 clear.mutate(undefined, {
-                  onSuccess: ({ removedCount }) => {
+                  onSuccess: ({ deletedCount }) => {
                     setConfirming(false)
-                    toast({ tone: 'success', title: t('settings.cache.cleared', { count: f.number(removedCount) }) })
+                    toast({ tone: 'success', title: t('settings.cache.cleared', { count: f.number(deletedCount) }) })
                   },
                   onError: (error) => {
                     setConfirming(false)
@@ -190,6 +201,196 @@ function CacheCard() {
       >
         <span />
       </Dialog>
+    </Card>
+  )
+}
+
+function PayPalConnectionCard() {
+  const { t } = useI18n()
+  const f = useFormat()
+  const errorMessage = useErrorMessage()
+  const { toast } = useToast()
+  const connection = usePayPalConnection()
+  const saveCredentials = useSavePayPalCredentials()
+  const test = useTestPayPalConnection()
+  const sync = useSyncPayPalTransactions()
+  const [clientId, setClientId] = useState('')
+  const [clientSecret, setClientSecret] = useState('')
+  const data = connection.data
+  const latestSync = sync.data ?? data?.latestSync
+  const connected = test.data?.connected ?? data?.connected ?? false
+  const connectionError = !data?.configured
+    ? null
+    : test.data?.connected === false
+      ? t('settings.paypal.credentialsRejected')
+      : data?.error
+  const syncError = sync.isError ? errorMessage(sync.error) : latestSync?.error
+
+  function testConnection() {
+    test.mutate(undefined, {
+      onSuccess: (result) =>
+        toast({
+          tone: result.connected ? 'success' : 'danger',
+          title: result.connected ? t('settings.paypal.testSucceeded') : result.error ?? t('settings.paypal.testFailed'),
+        }),
+      onError: (error) => toast({ tone: 'danger', title: errorMessage(error) }),
+    })
+  }
+
+  function syncTransactions() {
+    sync.mutate(30, {
+      onSuccess: (result) =>
+        toast({
+          tone: result.status === 'succeeded' ? 'success' : 'danger',
+          title: result.status === 'succeeded' ? t('settings.paypal.syncSucceeded') : result.error ?? t('settings.paypal.syncFailed'),
+        }),
+      onError: (error) => toast({ tone: 'danger', title: errorMessage(error) }),
+    })
+  }
+
+  function savePayPalCredentials(event: FormEvent) {
+    event.preventDefault()
+    saveCredentials.mutate(
+      { clientId: clientId.trim(), clientSecret },
+      {
+        onSuccess: () => {
+          setClientId('')
+          setClientSecret('')
+          test.reset()
+          toast({ tone: 'success', title: t('settings.paypal.credentialsSaved') })
+        },
+        onError: (error) => toast({ tone: 'danger', title: errorMessage(error) }),
+      },
+    )
+  }
+
+  return (
+    <Card className="xl:col-span-2">
+      <CardHeader title={t('settings.paypal.title')} description={t('settings.paypal.description')} />
+      {env.isMock ? (
+        <p className="text-sm text-ink-soft">{t('settings.paypal.realModeRequired')}</p>
+      ) : connection.isPending ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Skeleton className="h-5 w-full" />
+          <Skeleton className="h-5 w-full" />
+          <Skeleton className="h-5 w-full" />
+          <Skeleton className="h-5 w-full" />
+        </div>
+      ) : connection.isError ? (
+        <EmptyState
+          tone="danger"
+          title={errorMessage(connection.error)}
+          className="py-4"
+          action={<Button size="sm" variant="secondary" onClick={() => void connection.refetch()}>{t('common.retry')}</Button>}
+        />
+      ) : (
+        <div className="grid gap-5">
+          <dl className="grid gap-3 text-sm sm:grid-cols-2">
+            <div className="flex items-center justify-between gap-3 border-b border-line pb-2">
+              <dt className="text-ink-soft">{t('settings.paypal.status')}</dt>
+              <dd><Badge tone={connected ? 'success' : 'warning'}>{t(connected ? 'settings.paypal.connected' : 'settings.paypal.disconnected')}</Badge></dd>
+            </div>
+            <div className="flex items-center justify-between gap-3 border-b border-line pb-2">
+              <dt className="text-ink-soft">{t('settings.paypal.environment')}</dt>
+              <dd className="font-medium">{t(`settings.paypal.environments.${data?.environment ?? 'sandbox'}`)}</dd>
+            </div>
+            <div className="flex items-center justify-between gap-3 border-b border-line pb-2">
+              <dt className="text-ink-soft">{t('settings.paypal.authentication')}</dt>
+              <dd>{t(`settings.paypal.authenticationStates.${test.data ? (test.data.connected ? 'authenticated' : 'failed') : data?.apiAuthenticationStatus ?? 'not_configured'}`)}</dd>
+            </div>
+            <div className="flex items-center justify-between gap-3 border-b border-line pb-2">
+              <dt className="text-ink-soft">{t('settings.paypal.lastSuccessfulSync')}</dt>
+              <dd className="text-right">{data?.lastSuccessfulSyncAt ? f.dateTime(data.lastSuccessfulSyncAt) : t('settings.paypal.never')}</dd>
+            </div>
+          </dl>
+
+          {connectionError && <p role="status" className="text-sm text-danger">{connectionError}</p>}
+
+          <form
+            onSubmit={savePayPalCredentials}
+            className={`grid gap-4 rounded-lg border p-4 ${
+              data?.configured && data.apiAuthenticationStatus !== 'failed'
+                ? 'border-line bg-surface-muted'
+                : 'border-warning/40 bg-warning-soft'
+            }`}
+          >
+            <div className="grid gap-1">
+              <h3 className="text-sm font-semibold">{t('settings.paypal.credentialsTitle')}</h3>
+              {(!data?.configured || data.apiAuthenticationStatus === 'failed') && (
+                <p className="text-sm">{t(data?.configured ? 'settings.paypal.credentialsRejected' : 'settings.paypal.credentialsMissing')}</p>
+              )}
+              {data?.configured && <p className="text-sm text-ink-soft">{t('settings.paypal.credentialsStored')}</p>}
+              <p className="text-sm text-ink-soft">{t('settings.paypal.credentialsHelp')}</p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label={t('settings.paypal.clientId')}>
+                {({ id }) => (
+                  <Input
+                    id={id}
+                    value={clientId}
+                    onChange={(event) => setClientId(event.target.value)}
+                    autoComplete="off"
+                    required
+                  />
+                )}
+              </Field>
+              <Field label={t('settings.paypal.clientSecret')}>
+                {({ id }) => (
+                  <Input
+                    id={id}
+                    type="password"
+                    value={clientSecret}
+                    onChange={(event) => setClientSecret(event.target.value)}
+                    autoComplete="new-password"
+                    required
+                  />
+                )}
+              </Field>
+            </div>
+            <p className="text-xs text-ink-soft">{t('settings.paypal.credentialsUpdateHelp')}</p>
+            <div>
+              <Button
+                type="submit"
+                variant="secondary"
+                loading={saveCredentials.isPending}
+                disabled={!clientId.trim() || !clientSecret}
+              >
+                {t('settings.paypal.saveCredentials')}
+              </Button>
+            </div>
+          </form>
+
+          <div className="grid gap-2 rounded-lg border border-line bg-surface-muted p-4 text-sm">
+            <p className="font-semibold">{t('settings.paypal.latestResult')}</p>
+            {latestSync ? (
+              <>
+                <p>{t(`settings.paypal.syncStatuses.${latestSync.status}`)}</p>
+                <p className="text-ink-soft">
+                  {t('settings.paypal.syncCounts', {
+                    payments: f.number(latestSync.importedPaymentCount),
+                    invoices: f.number(latestSync.importedInvoiceCount),
+                    skipped: f.number(latestSync.skippedCount),
+                  })}
+                </p>
+                {syncError && <p role="alert" className="text-danger">{syncError}</p>}
+              </>
+            ) : (
+              <p className="text-ink-soft">{t('settings.paypal.noSync')}</p>
+            )}
+          </div>
+
+          {sync.isPending && <p role="status" className="text-sm text-ink-soft">{t('settings.paypal.syncProgress')}</p>}
+
+          <div className="flex flex-wrap gap-3">
+            <Button variant="secondary" loading={test.isPending} onClick={testConnection}>
+              {t('settings.paypal.testConnection')}
+            </Button>
+            <Button loading={sync.isPending} disabled={!connected || test.isPending} onClick={syncTransactions}>
+              {t('settings.paypal.syncTransactions')}
+            </Button>
+          </div>
+        </div>
+      )}
     </Card>
   )
 }
@@ -220,6 +421,7 @@ export function SettingsPage() {
           </div>
         </Card>
 
+        <PayPalConnectionCard />
         <BudgetCard />
         <CacheCard />
         <ModelsCard />

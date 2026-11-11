@@ -153,6 +153,10 @@ export const mockApi: Api = {
     listModels: (o) => respond(() => mockSettings.listModels(), o),
     getCacheStats: (o) => respond(() => mockSettings.getCacheStats(), o),
     clearCache: (o) => respond(() => mockSettings.clearCache(), o),
+    getPayPalConnection: (o) => respond(() => mockSettings.getPayPalConnection(), o),
+    testPayPalConnection: (o) => respond(() => mockSettings.testPayPalConnection(), o),
+    syncPayPalTransactions: (days, o) => respond(() => mockSettings.syncPayPalTransactions(days), o),
+    savePayPalCredentials: (request, o) => respond(() => mockSettings.savePayPalCredentials(request), o),
   },
 
   workspace: {

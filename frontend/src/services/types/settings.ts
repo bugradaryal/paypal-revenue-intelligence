@@ -26,9 +26,52 @@ export interface AiModelInfo {
 }
 
 export interface CacheStats {
-  entryCount: number
+  enabled: boolean
+  entries: number
+  activeEntries: number
+  hits: number
+  misses: number
+  hitRate: number
 }
 
 export interface ClearCacheResult {
-  removedCount: number
+  deletedCount: number
+}
+
+export type PayPalEnvironment = 'sandbox' | 'live'
+export type PayPalSyncStatus = 'running' | 'succeeded' | 'failed'
+
+export interface PayPalSyncRun {
+  id: string
+  status: PayPalSyncStatus
+  startedAt: string
+  finishedAt: string | null
+  rangeFrom: string
+  rangeTo: string
+  importedPaymentCount: number
+  importedInvoiceCount: number
+  skippedCount: number
+  error: string | null
+}
+
+export interface PayPalConnection {
+  configured: boolean
+  connected: boolean
+  environment: PayPalEnvironment
+  apiAuthenticationStatus: 'authenticated' | 'failed' | 'not_configured'
+  lastSuccessfulSyncAt: string | null
+  latestSync: PayPalSyncRun | null
+  error: string | null
+}
+
+export interface PayPalTestConnectionResult {
+  connected: boolean
+  environment: PayPalEnvironment
+  testedAt: string
+  error: string | null
+}
+
+export interface SavePayPalCredentialsRequest {
+  clientId: string
+  clientSecret: string
 }

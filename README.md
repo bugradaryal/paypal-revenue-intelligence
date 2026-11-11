@@ -65,7 +65,7 @@ Every visible string goes through i18n (EN, DE, TR, ES). No hardcoded UI text, n
 - Values from the backend (statuses, failure codes, error codes) are translated with `tryT(key, fallback)`, so an unknown value shows the fallback instead of a raw key.
 - Text written by the backend or the AI (e.g. suggestion rationales) is requested in the active language via the `Accept-Language` header; queries refetch when the language changes. The mock adapter imitates this.
 
-## Contract alignment (API_CONTRACT.md v0.3)
+## Contract alignment (API_CONTRACT.md v0.4)
 
 - `docs/API_CONTRACT.md` is the single source of truth and is owned by the backend. `src/services/types/` mirrors it.
 - `VITE_DATA_SOURCE=real` uses the backend only for operations listed in `READY` in `src/services/adapters/index.ts`; every other operation stays on the mock adapter, as the contract prescribes. Move an operation into `READY` when the contract lists its endpoint as Ready. `src/services/adapters/real/` already contains all calls, written from the contract.
@@ -101,6 +101,44 @@ Every visible string goes through i18n (EN, DE, TR, ES). No hardcoded UI text, n
 
 `/ai-cost`: total cost, tokens (input / output), cache hit rate, savings, the monthly budget, cost and request charts per day, and a breakdown by model or provider.
 
+## PayPal connection
+
+In real data mode, **Settings** shows the configured PayPal Sandbox connection and last synchronization result.
+Admin users can test OAuth authentication and import the previous 30 days of transactions; a successful sync
+refreshes revenue data. Enter and save Sandbox credentials directly in the Settings page; the API stores them
+encrypted in its local application data and never returns the secret. Saving new credentials replaces the old
+ones. The current version supports one Sandbox business account only; Live and multi-account OAuth are not
+supported. For a multi-instance deployment, configure a shared protected credential-store path and persist the
+ASP.NET Core Data Protection key ring securely across restarts.
+
+## Switching between mock and backend demo data
+
+There are two separate ways to use sample data:
+
+### Frontend mock mode
+
+In `frontend/.env`, set:
+
+```env
+VITE_DATA_SOURCE=mock
+```
+
+Restart the Vite dev server after changing the value. The frontend then uses its local fictional mock adapter for
+all supported screens; it does not fetch revenue data from the backend, and login is disabled.
+
+### Backend demo records with the real frontend
+
+To keep the frontend connected to the API while displaying the backend's clearly labeled demo records:
+
+1. Keep `VITE_DATA_SOURCE=real` in `frontend/.env`.
+2. In `backend/src/PRI.Api/appsettings.Development.json`, set `Seed.DemoData` to `true`.
+3. Restart the backend. On startup, it inserts demo records if they are not already present and includes demo records
+   in revenue and recovery queries.
+4. Restart the frontend if its `.env` value changed.
+
+Set `Seed.DemoData` back to `false` and restart the backend to exclude demo records from those queries; existing demo
+records are not deleted. This setting is intended for local development only, not production.
+
 - Everything shown is what the backend reports. Savings are measured by the gateway against a baseline model (contract section 5); the UI never estimates them. The provider list is never assumed: rows come from the response.
 - AI costs show up to four decimals. The budget's `spent` is the current UTC month, independent of the selected range, and the page says so. The bar under it is only a visual scale of the two reported amounts.
 - `TrendChart` now accepts counts as well as money, and hides its legend for a single series.
@@ -113,7 +151,7 @@ Every visible string goes through i18n (EN, DE, TR, ES). No hardcoded UI text, n
 **Settings** (`/settings`) holds language and dark mode (stored in this browser), the AI budget, the response cache (entry count and clear) and a read-only model catalog.
 
 Status against the contract:
-- The workspace stream runs on a **mock** assistant until contract 0.4 defines the SSE schema. The real adapter throws `ContractNotReadyError` for it.
+- The workspace stream runs on a **mock** assistant until contract 0.5 defines the SSE schema. The real adapter throws `ContractNotReadyError` for it.
 - The settings request and response shapes (`types/settings.ts`) are **proposed**, because the contract lists the endpoints but not the schemas. They stay on the mock adapter until the contract marks them Ready.
 - **Routing rules are deliberately not shown.** Their schema is undefined, and the UI must not show settings the backend cannot store.
 

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Navigate, useLocation, useNavigate } from 'react-router'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router'
 import { Button, Card, Field, Input, ThemeToggle } from '@/components/ui'
 import { LanguageMenu } from '@/components/layout/LanguageMenu'
 import { Logo } from '@/components/layout/Logo'
@@ -14,7 +14,7 @@ export function LoginPage() {
   const { required, user, signIn } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const from = (location.state as { from?: string } | null)?.from ?? '/'
+  const from = (location.state as { from?: string } | null)?.from ?? '/dashboard'
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -40,7 +40,9 @@ export function LoginPage() {
   return (
     <div className="grid min-h-dvh grid-rows-[auto_1fr] bg-surface-app">
       <header className="flex items-center justify-between px-4 py-4 sm:px-8">
-        <Logo />
+        <Link to="/" aria-label={t('landing.home')} className="rounded-lg focus-ring">
+          <Logo />
+        </Link>
         <div className="flex items-center gap-2">
           <LanguageMenu />
           <ThemeToggle />

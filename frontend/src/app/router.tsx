@@ -6,6 +6,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 const AiCostPage = lazy(() => import('@/pages/AiCostPage').then((m) => ({ default: m.AiCostPage })))
 const AiWorkspacePage = lazy(() => import('@/pages/AiWorkspacePage').then((m) => ({ default: m.AiWorkspacePage })))
+const HomePage = lazy(() => import('@/pages/HomePage').then((m) => ({ default: m.HomePage })))
 const LoginPage = lazy(() => import('@/pages/LoginPage').then((m) => ({ default: m.LoginPage })))
 const OverviewPage = lazy(() => import('@/pages/OverviewPage').then((m) => ({ default: m.OverviewPage })))
 const PaymentsPage = lazy(() => import('@/pages/PaymentsPage').then((m) => ({ default: m.PaymentsPage })))
@@ -18,11 +19,12 @@ const TokensPage = lazy(() => import('@/pages/dev/TokensPage').then((m) => ({ de
 export function AppRoutes() {
   return (
     <Routes>
+      <Route path="/" element={<Suspense fallback={<PageFallback />}><HomePage /></Suspense>} />
       <Route path="login" element={<Suspense fallback={<PageFallback />}><LoginPage /></Suspense>} />
 
       <Route element={<RequireAuth />}>
         <Route element={<AppShell />}>
-          <Route index element={<OverviewPage />} />
+          <Route path="dashboard" element={<OverviewPage />} />
           <Route path="payments" element={<PaymentsPage />} />
           <Route path="recovery" element={<RecoveryPage />} />
           <Route path="ai-cost" element={<AiCostPage />} />

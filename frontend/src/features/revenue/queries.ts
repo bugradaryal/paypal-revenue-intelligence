@@ -1,9 +1,14 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { env } from '@/config/env'
 import { api } from '@/services/adapters'
 import type { DateRange, DecideSuggestionRequest, PaymentQuery, SuggestionQuery } from '@/services/types'
 
+function keepPreviousDataForSource<T>(previousData: T | undefined, previousQuery: { queryKey: readonly unknown[] } | undefined) {
+  return previousQuery?.queryKey[1] === env.dataSource ? previousData : undefined
+}
+
 export const revenueKeys = {
-  all: ['revenue'] as const,
+  all: ['revenue', env.dataSource] as const,
   summary: (range: DateRange) => [...revenueKeys.all, 'summary', range] as const,
   payments: (query: PaymentQuery) => [...revenueKeys.all, 'payments', query] as const,
   payment: (id: string) => [...revenueKeys.all, 'payment', id] as const,
@@ -16,8 +21,8 @@ export function useRevenueSummary(range: DateRange) {
   return useQuery({
     queryKey: revenueKeys.summary(range),
     queryFn: ({ signal }) => api.revenue.getSummary(range, { signal }),
-    // Switching the time range keeps the previous figures on screen until the new ones arrive.
-    placeholderData: keepPreviousData,
+    // Keep figures while changing ranges, but never carry mock figures into real mode (or vice versa).
+    placeholderData: keepPreviousDataForSource,
   })
 }
 
@@ -26,7 +31,7 @@ export function usePayments(query: PaymentQuery) {
     queryKey: revenueKeys.payments(query),
     queryFn: ({ signal }) => api.revenue.listPayments(query, { signal }),
     // Keep the old page visible while the next one loads (no table flicker when paging or filtering).
-    placeholderData: keepPreviousData,
+    placeholderData: keepPreviousDataForSource,
   })
 }
 
@@ -42,7 +47,7 @@ export function useRecoverySummary(range: DateRange) {
   return useQuery({
     queryKey: revenueKeys.recoverySummary(range),
     queryFn: ({ signal }) => api.revenue.getRecoverySummary(range, { signal }),
-    placeholderData: keepPreviousData,
+    placeholderData: keepPreviousDataForSource,
   })
 }
 
@@ -55,7 +60,7 @@ export function useSuggestions(query: SuggestionQuery, options: { enabled?: bool
     enabled: options.enabled ?? true,
     queryKey: revenueKeys.suggestions(query),
     queryFn: ({ signal }) => api.revenue.listSuggestions(query, { signal }),
-    placeholderData: keepPreviousData,
+    placeholderData: keepPreviousDataForSource,
     refetchInterval: (state) => {
       const waiting = state.state.data?.items.some(
         (s) => s.status === 'approved' && s.executable && Date.now() - Date.parse(s.updatedAt) < EXECUTION_POLL_WINDOW_MS,

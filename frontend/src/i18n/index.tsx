@@ -41,11 +41,6 @@ function detectInitialLocale(): Locale {
   } catch {
     /* storage unavailable */
   }
-  const preferred = navigator.languages?.length ? navigator.languages : [navigator.language]
-  for (const tag of preferred) {
-    const base = tag.toLowerCase().split('-')[0]
-    if (isLocale(base)) return base
-  }
   return 'en'
 }
 

@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\PRI.Shared\PRI.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

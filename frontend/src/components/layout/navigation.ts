@@ -20,7 +20,7 @@ export interface NavSection {
 export const navSections: NavSection[] = [
   {
     id: 'main',
-    items: [{ page: 'overview', path: '/', labelKey: 'nav.overview', icon: LayoutDashboard }],
+    items: [{ page: 'overview', path: '/dashboard', labelKey: 'nav.overview', icon: LayoutDashboard }],
   },
   {
     id: 'revenue',

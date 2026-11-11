@@ -12,6 +12,10 @@ import type {
   DecideSuggestionRequest,
   GenerateSuggestionsResult,
   Page,
+  PayPalConnection,
+  PayPalTestConnectionResult,
+  PayPalSyncRun,
+  SavePayPalCredentialsRequest,
   PaymentDetail,
   Payment,
   PaymentQuery,
@@ -52,6 +56,10 @@ export interface SettingsApi {
   listModels(options?: RequestOptions): Promise<AiModelInfo[]>
   getCacheStats(options?: RequestOptions): Promise<CacheStats>
   clearCache(options?: RequestOptions): Promise<ClearCacheResult>
+  getPayPalConnection(options?: RequestOptions): Promise<PayPalConnection>
+  testPayPalConnection(options?: RequestOptions): Promise<PayPalTestConnectionResult>
+  syncPayPalTransactions(days: number, options?: RequestOptions): Promise<PayPalSyncRun>
+  savePayPalCredentials(request: SavePayPalCredentialsRequest, options?: RequestOptions): Promise<{ configured: boolean }>
 }
 
 export interface WorkspaceApi {

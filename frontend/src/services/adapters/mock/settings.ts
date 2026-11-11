@@ -1,5 +1,13 @@
 import { ApiError } from '../../errors'
-import type { AiBudgetSetting, CacheStats, UpdateBudgetRequest } from '../../types'
+import type {
+  AiBudgetSetting,
+  CacheStats,
+  PayPalConnection,
+  PayPalSyncRun,
+  PayPalTestConnectionResult,
+  SavePayPalCredentialsRequest,
+  UpdateBudgetRequest,
+} from '../../types'
 import { buildModelCatalog, getMockBudget, setMockBudget } from './data'
 
 /** Mock of the planned settings endpoints. Shapes are PROPOSED (types/settings.ts). */
@@ -26,11 +34,51 @@ export const mockSettings = {
 
   listModels: () => buildModelCatalog(),
 
-  getCacheStats: (): CacheStats => ({ entryCount: cacheEntries }),
+  getCacheStats: (): CacheStats => ({
+    enabled: true,
+    entries: cacheEntries,
+    activeEntries: cacheEntries,
+    hits: 845,
+    misses: 439,
+    hitRate: 845 / 1284,
+  }),
 
   clearCache: () => {
     const removedCount = cacheEntries
     cacheEntries = 0
-    return { removedCount }
+    return { deletedCount: removedCount }
+  },
+
+  getPayPalConnection: (): PayPalConnection => ({
+    configured: false,
+    connected: false,
+    environment: 'sandbox',
+    apiAuthenticationStatus: 'not_configured',
+    lastSuccessfulSyncAt: null,
+    latestSync: null,
+    error: null,
+  }),
+
+  testPayPalConnection: (): PayPalTestConnectionResult => ({
+    connected: false,
+    environment: 'sandbox',
+    testedAt: new Date().toISOString(),
+    error: 'PayPal connection tests require real data mode.',
+  }),
+
+  savePayPalCredentials: (_request: SavePayPalCredentialsRequest): { configured: boolean } => {
+    throw new ApiError({
+      status: 400,
+      title: 'Saving PayPal credentials is unavailable in mock mode.',
+      code: 'mock_paypal_credentials',
+    })
+  },
+
+  syncPayPalTransactions: (_days: number): PayPalSyncRun => {
+    throw new ApiError({
+      status: 400,
+      title: 'PayPal sync is unavailable in mock mode.',
+      code: 'mock_paypal_sync',
+    })
   },
 }
