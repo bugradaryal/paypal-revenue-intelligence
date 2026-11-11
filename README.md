@@ -28,6 +28,21 @@ npm run dev              # http://localhost:5173
 The API address lives only in `VITE_API_BASE_URL` (see `frontend/.env.example`).
 `VITE_DATA_SOURCE=mock` uses the local mock adapter until the API contract is settled.
 
+## Local backend secrets
+
+`backend/src/PRI.Api/appsettings.Development.json` is local-only and intentionally excluded from Git. Keep
+database passwords, JWT signing keys, admin passwords, and provider credentials out of tracked settings files.
+Use .NET User Secrets for local values, for example:
+
+```powershell
+dotnet user-secrets set "ConnectionStrings:Default" "<LOCAL_CONNECTION_STRING>" --project backend/src/PRI.Api
+dotnet user-secrets set "Jwt:Key" "<RANDOM_SECRET_KEY>" --project backend/src/PRI.Api
+dotnet user-secrets set "Seed:AdminPassword" "<LOCAL_ADMIN_PASSWORD>" --project backend/src/PRI.Api
+```
+
+For hosted environments, provide secrets through the platform's secret manager or environment variables.
+If a credential was ever committed or pushed, removing the file from Git is not enough: rotate that credential.
+
 ## Frontend structure (as of Phase 3)
 
 | Path | Purpose |

@@ -6,4 +6,5 @@ dist/
 .vs/
 bin/
 obj/
+backend/src/PRI.Api/appsettings.Development.json
 .DS_Store
