@@ -32,9 +32,9 @@ public sealed class AiCompletionService(
 {
     private const string Usd = "USD";
 
-    // Yalnızca geçici sağlayıcı sorunlarında yedek modele geçilir. Reddedilen istek veya geçersiz API anahtarı
-    // başka bir modelde de aynı sonucu verir, bu yüzden denenmez.
-    private static readonly string[] RetryableErrorCodes = ["provider_unavailable", "provider_rate_limited"];
+    // Reddedilen istek veya geçersiz API anahtarı başka bir modelde de aynı sonucu verir; yedek denenmez.
+    private static readonly string[] FallbackEligibleErrorCodes =
+        ["provider_unavailable", "provider_rate_limited", "openai_not_configured", "gemini_not_configured"];
 
     public async Task<CompletionResponse> CompleteAsync(
         CompletionRequest request, Guid? clientId, CancellationToken cancellationToken)
@@ -42,7 +42,15 @@ public sealed class AiCompletionService(
         var startedAll = Stopwatch.GetTimestamp();
         var effectiveClientId = clientId ?? await GetFirstPartyClientIdAsync(cancellationToken);
 
-        var plan = await router.BuildPlanAsync(request.Model, request.TaskType, cancellationToken);
+        var taskTypeHint = request.TaskType;
+        if (string.IsNullOrWhiteSpace(taskTypeHint)
+            || string.Equals(taskTypeHint.Trim(), "default", StringComparison.OrdinalIgnoreCase))
+        {
+            taskTypeHint = TaskTypeClassifier.Classify(
+                request.Messages.LastOrDefault(message => message.Role == "user")?.Content);
+        }
+
+        var plan = await router.BuildPlanAsync(request.Model, taskTypeHint, cancellationToken, request.Provider);
         var isAuto = plan.Mode == "auto";
         var taskType = plan.TaskType;
 
@@ -62,7 +70,7 @@ public sealed class AiCompletionService(
             lookup = await cache.LookupAsync(
                 new CacheLookupInput(
                     effectiveClientId, request.Model, taskType, request.MaxOutputTokens,
-                    request.Temperature, request.ReasoningEffort, messages),
+                    request.Temperature, request.ReasoningEffort, messages, request.Provider),
                 cancellationToken);
         }
 
@@ -148,7 +156,7 @@ public sealed class AiCompletionService(
                     ElapsedMs(startedTimestamp), requestedAt, timeProvider.GetUtcNow().UtcDateTime));
                 await unitOfWork.SaveChangesAsync(CancellationToken.None);
 
-                if (!isLast && RetryableErrorCodes.Contains(errorCode))
+                if (!isLast && FallbackEligibleErrorCodes.Contains(errorCode))
                 {
                     continue;
                 }

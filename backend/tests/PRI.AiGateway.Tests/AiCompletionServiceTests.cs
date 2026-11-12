@@ -16,18 +16,24 @@ public class AiCompletionServiceTests
 
     private sealed class Harness
     {
-        public Harness(ScriptedProvider provider)
+        public Harness(
+            ScriptedProvider provider,
+            IEnumerable<ProviderModel>? additionalModels = null,
+            IEnumerable<IAiProvider>? additionalProviders = null,
+            IEnumerable<RoutingRule>? routingRules = null)
         {
             Provider = provider;
 
             var luna = TestData.Luna();
             var terra = TestData.Terra();
             var sol = TestData.Sol();
-            var models = new FakeProviderModelRepository([luna, terra, sol]);
-            var rules = new FakeRoutingRuleRepository(
+            var models = new FakeProviderModelRepository(new[] { luna, terra, sol }.Concat(additionalModels ?? []));
+            var rules = new FakeRoutingRuleRepository(routingRules ??
             [
                 RoutingRule.Create("default", luna.Id, [terra.Id], TestData.Now)
             ]);
+            var providers = new List<IAiProvider> { provider };
+            providers.AddRange(additionalProviders ?? []);
 
             Clients.Clients.Add(GatewayClient.CreateFirstParty("PRI Dashboard", TestData.Now));
 
@@ -40,7 +46,7 @@ public class AiCompletionServiceTests
 
             Service = new AiCompletionService(
                 new ModelRouter(models, rules), models, Clients, Usage,
-                new AiProviderResolver([provider]), new PromptOptimizer(), cache, budget,
+                new AiProviderResolver(providers), new PromptOptimizer(), cache, budget,
                 UnitOfWork, TimeProvider.System, NullLogger<AiCompletionService>.Instance);
         }
 
@@ -111,6 +117,69 @@ public class AiCompletionServiceTests
         Assert.Equal("provider_unavailable", failed.ErrorCode);
         Assert.Equal(0m, failed.CostUsd);
         Assert.Equal(2, harness.Usage.Records.Single(r => r.Status == UsageStatus.Success).Attempt);
+    }
+
+    [Fact]
+    public async Task Auto_uses_Gemini_for_analysis_when_it_has_the_best_task_fit_and_price()
+    {
+        var geminiModel = ProviderModel.Create(
+            AiProvider.Gemini,
+            "gemini-3.5-flash-lite",
+            "Gemini 3.5 Flash Lite",
+            ModelTier.Standard,
+            0.75m,
+            null,
+            3.75m,
+            "https://ai.google.dev/gemini-api/docs/pricing",
+            new DateOnly(2026, 11, 7),
+            TestData.Now);
+        var openAi = new ScriptedProvider(_ => Ok());
+        var gemini = new ScriptedProvider(_ => Ok(), AiProvider.Gemini);
+        var harness = new Harness(openAi, [geminiModel], [gemini]);
+        var request = SimpleRequest with
+        {
+            Messages = [new CompletionMessageDto("user", "Bu ödeme sorununu analiz et ve nedenlerini karşılaştır.")]
+        };
+
+        var response = await harness.Service.CompleteAsync(request, null, CancellationToken.None);
+
+        Assert.Equal(AiProvider.Gemini, response.Provider);
+        Assert.Equal("gemini-3.5-flash-lite", response.Model);
+        Assert.Empty(openAi.CalledModels);
+        Assert.Equal("gemini-3.5-flash-lite", Assert.Single(gemini.CalledModels));
+    }
+
+    [Fact]
+    public async Task Auto_falls_back_when_the_best_fit_provider_is_not_configured()
+    {
+        var geminiModel = ProviderModel.Create(
+            AiProvider.Gemini,
+            "gemini-3.5-flash-lite",
+            "Gemini 3.5 Flash Lite",
+            ModelTier.Standard,
+            0.75m,
+            null,
+            3.75m,
+            "https://ai.google.dev/gemini-api/docs/pricing",
+            new DateOnly(2026, 11, 7),
+            TestData.Now);
+        var openAi = new ScriptedProvider(_ => Ok());
+        var gemini = new ScriptedProvider(
+            _ => throw new BusinessRuleException("gemini_not_configured", "key missing"),
+            AiProvider.Gemini);
+        var harness = new Harness(openAi, [geminiModel], [gemini]);
+        var request = SimpleRequest with
+        {
+            Messages = [new CompletionMessageDto("user", "Bu ödeme sorununu analiz et ve nedenlerini karşılaştır.")]
+        };
+
+        var response = await harness.Service.CompleteAsync(request, null, CancellationToken.None);
+
+        Assert.Equal(AiProvider.Openai, response.Provider);
+        Assert.Equal("gpt-6.1-terra", response.Model);
+        Assert.True(response.Routing.FallbackUsed);
+        Assert.Equal("gemini-3.5-flash-lite", Assert.Single(gemini.CalledModels));
+        Assert.Equal("gpt-6.1-terra", Assert.Single(openAi.CalledModels));
     }
 
     [Fact]

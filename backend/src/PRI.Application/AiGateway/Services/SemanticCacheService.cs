@@ -40,7 +40,7 @@ public sealed class SemanticCacheService(
         var fingerprint = SemanticCacheKey.ComputeNumbersFingerprint(query);
         var contextHash = SemanticCacheKey.ComputeContextHash(
             input.RequestedModel, input.TaskType, input.MaxOutputTokens, input.Temperature, input.ReasoningEffort,
-            input.Messages.Take(input.Messages.Count - 1).Select(m => (m.Role, m.Content)));
+            input.Messages.Take(input.Messages.Count - 1).Select(m => (m.Role, m.Content)), input.Provider);
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
 

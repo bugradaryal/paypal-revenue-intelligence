@@ -106,7 +106,7 @@ public sealed class GeminiProviderTests
     }
 
     private static GeminiProvider CreateProvider(HttpClient http) =>
-        new(http, Options.Create(new GeminiSettings { ApiKey = "test-key" }), NullLogger<GeminiProvider>.Instance);
+        new(http, Options.Create(new GeminiSettings { GeminiKey = "test-key" }), NullLogger<GeminiProvider>.Instance);
 
     private static HttpResponseMessage JsonResponse(HttpStatusCode status, string json) =>
         new(status) { Content = new StringContent(json, Encoding.UTF8, "application/json") };

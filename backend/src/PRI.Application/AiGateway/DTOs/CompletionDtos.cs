@@ -7,6 +7,7 @@ public sealed record CompletionMessageDto(string Role, string Content);
 
 /// <param name="Model">Model kimliği (ör. gpt-6-luna) ya da "auto". Boş veya "auto" ise gateway yönlendirme kurallarıyla seçer.</param>
 /// <param name="TaskType">Otomatik yönlendirme için görev tipi ipucu (ör. classification, summarization, analysis). Bilinmiyorsa "default" kuralı uygulanır.</param>
+/// <param name="Provider">Boşsa mevcut yönlendirme kuralları kullanılır; belirtilirse model seçimi bu sağlayıcıyla sınırlandırılır.</param>
 /// <param name="MaxOutputTokens">Üretilecek en fazla token (gizli akıl yürütme token'ları da buna sayılır).</param>
 /// <param name="Temperature">Verilirse sağlayıcıya reasoning_effort=none ile birlikte gönderilir (modeller aksi halde reddeder).</param>
 /// <param name="ReasoningEffort">none | low | medium | high | xhigh | max. Boşsa sağlayıcı varsayılanı.</param>
@@ -20,7 +21,8 @@ public sealed record CompletionRequest(
     double? Temperature,
     string? ReasoningEffort,
     bool? Cache = null,
-    bool? OptimizePrompt = null);
+    bool? OptimizePrompt = null,
+    AiProvider? Provider = null);
 
 public sealed record CompletionUsageDto(int InputTokens, int CachedInputTokens, int OutputTokens);
 

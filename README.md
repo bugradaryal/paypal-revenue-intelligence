@@ -104,7 +104,7 @@ The gateway currently supports OpenAI and Google Gemini. For local Gemini access
 ```json
 {
   "Gemini": {
-    "ApiKey": "YOUR_GEMINI_API_KEY"
+    "GeminiKey": "YOUR_GEMINI_API_KEY"
   }
 }
 ```
@@ -112,16 +112,18 @@ The gateway currently supports OpenAI and Google Gemini. For local Gemini access
 Alternatively, store it with .NET User Secrets:
 
 ```powershell
-dotnet user-secrets set "Gemini:ApiKey" "<YOUR_GEMINI_API_KEY>" --project backend/src/PRI.Api
+dotnet user-secrets set "Gemini:GeminiKey" "<YOUR_GEMINI_API_KEY>" --project backend/src/PRI.Api
 ```
 
-The model catalog seeds `gemini-3.5-flash-lite`. In **AI Workspace**, the system stays on **Automatic (routing rules)** and lets the backend choose the best model automatically.
-a model explicitly. Automatic selection is deterministic, not another AI call: the backend looks for a rule
-matching the task type, then the default rule. Today the default and classification/summarization rules use
-OpenAI GPT-6 Luna with GPT-6.1 Terra as fallback; analysis uses GPT-6.1 Terra with GPT-6.1 Sol as fallback.
-Gemini is available as an explicit choice and does not silently replace the existing OpenAI default. A pinned
-model is used on its own; automatic rules can try the next configured model for transient provider outages or
-rate limits. The response reports which provider/model actually answered.
+The model catalog seeds `gemini-3.5-flash-lite`. In **AI Workspace**, choose **Auto**, **OpenAI**, or **Gemini**.
+Auto infers common summary, classification, and analysis tasks from the latest prompt, then applies the
+matching routing rule (or the default rule). It ranks the rule's models and the best eligible model from each
+enabled provider by task fit, then catalog token prices; the configured primary is not forced to run first.
+Choosing OpenAI or Gemini restricts automatic model selection to that provider. The budget is a spending cap,
+not a model-selection signal; requests stop when the cap is reached. The current rules contribute OpenAI GPT-6
+Luna for default, classification, and summarization, and GPT-6.1 Terra for analysis. If a selected provider is
+not configured or is temporarily unavailable, Auto can try the next ranked candidate. The response reports
+which provider/model actually answered.
 
 The AI Cost page calculates Gemini estimates from Google's published paid-tier token prices stored in the
 catalog; actual billing can differ by account tier and usage. Review current [Gemini API pricing](https://ai.google.dev/gemini-api/docs/pricing)

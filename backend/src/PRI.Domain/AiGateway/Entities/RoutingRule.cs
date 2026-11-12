@@ -3,8 +3,8 @@ using PRI.Domain.Common;
 namespace PRI.Domain.AiGateway.Entities;
 
 /// <summary>
-/// Görev tipine göre model seçim kuralı: ana model ve sırayla denenecek yedek modeller. Kural tabanlıdır ve
-/// yönlendirme için ayrıca bir LLM çağrısı yapılmaz (maliyet ve gecikme eklememek için).
+/// Görev tipine göre model adayları: ana model ve yedek modeller. Otomatik yönlendirme bunları görev uygunluğu ve
+/// fiyatla sıralar; yönlendirme için ayrıca bir LLM çağrısı yapılmaz.
 /// </summary>
 public sealed class RoutingRule : BaseEntity
 {

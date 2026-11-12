@@ -258,7 +258,7 @@ export const realApi: Api = {
       const response = await http.post<CompletionResponse>('gateway/completions', {
         body: {
           model: request.model ?? 'auto',
-          taskType: 'default',
+          provider: request.provider,
           messages: [
             {
               role: 'system',

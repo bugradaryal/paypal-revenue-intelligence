@@ -1,5 +1,6 @@
 using PRI.Application.AiGateway.DTOs;
 using PRI.Domain.AiGateway.Entities;
+using PRI.Domain.AiGateway.Enums;
 
 namespace PRI.Application.AiGateway.Interfaces;
 
@@ -14,14 +15,18 @@ public interface IModelCatalogService
     Task<IReadOnlyList<ProviderModelDto>> ListAsync(CancellationToken cancellationToken);
 }
 
-/// <param name="Models">Sırayla denenecek modeller (ilki ana model).</param>
+/// <param name="Models">Otomatik görev/fiyat sıralamasına göre denenecek modeller.</param>
 /// <param name="Mode">"explicit" veya "auto".</param>
 /// <param name="Rule">Uygulanan kuralın görev tipi; yoksa null.</param>
 public sealed record RoutePlan(IReadOnlyList<ProviderModel> Models, string Mode, string? TaskType, string? Rule);
 
 public interface IModelRouter
 {
-    Task<RoutePlan> BuildPlanAsync(string? requestedModel, string? taskType, CancellationToken cancellationToken);
+    Task<RoutePlan> BuildPlanAsync(
+        string? requestedModel,
+        string? taskType,
+        CancellationToken cancellationToken,
+        AiProvider? provider = null);
 }
 
 public interface IGatewayClientService

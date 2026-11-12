@@ -72,7 +72,7 @@ public sealed class OpenAiProvider(
         {
             if (!response.IsSuccessStatusCode)
             {
-                throw await MapErrorAsync(response, cancellationToken);
+                throw await MapErrorAsync(response, request.ModelId, cancellationToken);
             }
 
             var parsed = await response.Content.ReadFromJsonAsync<ChatCompletionResponse>(JsonOptions, cancellationToken);
@@ -95,12 +95,25 @@ public sealed class OpenAiProvider(
         }
     }
 
-    private async Task<Exception> MapErrorAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    private async Task<Exception> MapErrorAsync(
+        HttpResponseMessage response,
+        string modelId,
+        CancellationToken cancellationToken)
     {
         var status = (int)response.StatusCode;
         var providerMessage = await TryReadErrorMessageAsync(response, cancellationToken);
+        var requestId = response.Headers.TryGetValues("x-request-id", out var requestIds)
+            ? requestIds.FirstOrDefault()
+            : null;
 
-        logger.LogWarning("OpenAI returned HTTP {Status}: {Message}", status, providerMessage ?? "(no message)");
+        logger.LogWarning(
+            "OpenAI returned HTTP {Status} for model {Model} at {RequestUri} (request ID {RequestId}, content type {ContentType}): {Message}",
+            status,
+            modelId,
+            response.RequestMessage?.RequestUri,
+            requestId ?? "(none)",
+            response.Content.Headers.ContentType?.MediaType ?? "(none)",
+            providerMessage ?? "(no message)");
 
         switch (response.StatusCode)
         {
@@ -129,16 +142,39 @@ public sealed class OpenAiProvider(
 
     private static async Task<string?> TryReadErrorMessageAsync(HttpResponseMessage response, CancellationToken cancellationToken)
     {
-        try
-        {
-            var envelope = await response.Content.ReadFromJsonAsync<OpenAiErrorEnvelope>(JsonOptions, cancellationToken);
-            var message = envelope?.Error?.Message;
-
-            return message is { Length: > 300 } ? message[..300] : message;
-        }
-        catch (Exception ex) when (ex is JsonException or NotSupportedException)
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (string.IsNullOrWhiteSpace(body))
         {
             return null;
         }
+
+        try
+        {
+            using var document = JsonDocument.Parse(body);
+            var root = document.RootElement;
+            var message = root.TryGetProperty("error", out var error)
+                && error.ValueKind == JsonValueKind.Object
+                && error.TryGetProperty("message", out var errorMessage)
+                ? errorMessage
+                : root.TryGetProperty("message", out var topLevelMessage)
+                    ? topLevelMessage
+                    : default;
+
+            return message.ValueKind == JsonValueKind.String
+                ? Truncate(message.GetString())
+                : null;
+        }
+        catch (JsonException)
+        {
+            return string.Equals(
+                response.Content.Headers.ContentType?.MediaType,
+                "text/plain",
+                StringComparison.OrdinalIgnoreCase)
+                ? Truncate(body)
+                : null;
+        }
     }
+
+    private static string? Truncate(string? message) =>
+        message is { Length: > 300 } ? message[..300] : message;
 }

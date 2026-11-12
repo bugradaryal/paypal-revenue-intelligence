@@ -32,7 +32,8 @@ public sealed record CacheLookupInput(
     int? MaxOutputTokens,
     double? Temperature,
     string? ReasoningEffort,
-    IReadOnlyList<ProviderMessage> Messages);
+    IReadOnlyList<ProviderMessage> Messages,
+    AiProvider? Provider = null);
 
 public sealed record CacheHit(SemanticCacheEntry Entry, CacheOutcome Outcome, double Similarity);
 

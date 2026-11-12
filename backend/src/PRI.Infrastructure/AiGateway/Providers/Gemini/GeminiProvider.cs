@@ -25,7 +25,7 @@ public sealed class GeminiProvider(
         var settings = options.Value;
         if (!settings.IsConfigured)
         {
-            throw new BusinessRuleException("gemini_not_configured", "Gemini:ApiKey is not configured.");
+            throw new BusinessRuleException("gemini_not_configured", "Gemini:GeminiKey is not configured.");
         }
 
         var systemText = string.Join(
@@ -52,7 +52,7 @@ public sealed class GeminiProvider(
         {
             Content = JsonContent.Create(body, options: JsonOptions)
         };
-        httpRequest.Headers.Add("x-goog-api-key", settings.ApiKey);
+        httpRequest.Headers.Add("x-goog-api-key", settings.GeminiKey);
 
         HttpResponseMessage response;
         try
@@ -120,7 +120,7 @@ public sealed class GeminiProvider(
             HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden =>
                 new ExternalServiceException(
                     "provider_authentication_failed",
-                    $"Gemini rejected the API key (HTTP {status}). Check Gemini:ApiKey."),
+                    $"Gemini rejected the API key (HTTP {status}). Check Gemini:GeminiKey."),
             HttpStatusCode.TooManyRequests =>
                 new ExternalServiceException("provider_rate_limited", $"Gemini rate limit or quota reached (HTTP {status})."),
             HttpStatusCode.BadRequest or HttpStatusCode.NotFound or HttpStatusCode.UnprocessableEntity =>

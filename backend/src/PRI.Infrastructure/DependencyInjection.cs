@@ -98,17 +98,19 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromSeconds(30);
         });
 
-        services.AddHttpClient<IAiProvider, OpenAiProvider>((serviceProvider, client) =>
+        services.AddHttpClient<OpenAiProvider>(client =>
         {
             client.BaseAddress = new Uri(OpenAiSettings.DefaultBaseUrl);
             client.Timeout = TimeSpan.FromSeconds(55);   // API sözleşmesi: AI uçları için istemci timeout'u 60 sn
         });
+        services.AddTransient<IAiProvider>(serviceProvider => serviceProvider.GetRequiredService<OpenAiProvider>());
 
-        services.AddHttpClient<IAiProvider, GeminiProvider>(client =>
+        services.AddHttpClient<GeminiProvider>(client =>
         {
             client.BaseAddress = new Uri(GeminiSettings.DefaultBaseUrl);
             client.Timeout = TimeSpan.FromSeconds(55);
         });
+        services.AddTransient<IAiProvider>(serviceProvider => serviceProvider.GetRequiredService<GeminiProvider>());
 
         services.AddHttpClient<IEmbeddingProvider, OpenAiEmbeddingProvider>((serviceProvider, client) =>
         {

@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using PRI.Domain.AiGateway.Enums;
 
 namespace PRI.Domain.AiGateway;
 
@@ -33,11 +34,16 @@ public static partial class SemanticCacheKey
         int? maxOutputTokens,
         double? temperature,
         string? reasoningEffort,
-        IEnumerable<(string Role, string Content)> precedingMessages)
+        IEnumerable<(string Role, string Content)> precedingMessages,
+        AiProvider? provider = null)
     {
         var builder = new StringBuilder();
 
         Append(builder, string.IsNullOrWhiteSpace(requestedModel) ? "auto" : requestedModel.Trim().ToLowerInvariant());
+        if (provider is not null)
+        {
+            Append(builder, $"provider:{provider.Value.ToString().ToLowerInvariant()}");
+        }
         Append(builder, taskType?.Trim().ToLowerInvariant() ?? string.Empty);
         Append(builder, maxOutputTokens?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty);
         Append(builder, temperature?.ToString("R", System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty);

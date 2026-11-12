@@ -322,6 +322,13 @@ Gün 2  GET /revenue/invoices · GET /revenue/customers
 Gün 3  POST /gateway/completions
 ```
 
+For completions, `provider` is optional: omit it to use automatic routing across enabled providers, or set it
+to `openai` or `gemini` to restrict automatic model selection to that provider. If `taskType` is omitted or
+`default`, common summary, classification, and analysis tasks are inferred from the latest user message; the
+configured rule's models and eligible cross-provider candidates are ranked by task fit and catalog token prices.
+The primary model is not forced first. Auto can fall back when a provider is unconfigured or temporarily
+unavailable; rejected requests do not trigger fallback. The budget is a spending cap, not a model-selection signal.
+
 **Operasyon eşlemesi (frontend adapter):**
 
 | Adapter metodu | Endpoint | Hedef |

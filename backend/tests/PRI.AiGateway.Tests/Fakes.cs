@@ -105,9 +105,11 @@ internal sealed class FakeUnitOfWork : IUnitOfWork
 }
 
 /// <summary>Her çağrıda verilen davranışı çalıştıran sahte sağlayıcı; hangi modellerin çağrıldığını kaydeder.</summary>
-internal sealed class ScriptedProvider(Func<ProviderCompletionRequest, ProviderCompletionResult> behavior) : IAiProvider
+internal sealed class ScriptedProvider(
+    Func<ProviderCompletionRequest, ProviderCompletionResult> behavior,
+    AiProvider provider = AiProvider.Openai) : IAiProvider
 {
-    public AiProvider Provider => AiProvider.Openai;
+    public AiProvider Provider => provider;
 
     public List<string> CalledModels { get; } = [];
 

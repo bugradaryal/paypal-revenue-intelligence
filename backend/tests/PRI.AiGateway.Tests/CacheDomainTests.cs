@@ -50,6 +50,17 @@ public class SemanticCacheKeyTests
     }
 
     [Fact]
+    public void Context_hash_separates_provider_pinned_automatic_requests()
+    {
+        var openAi = SemanticCacheKey.ComputeContextHash(
+            "auto", null, null, null, null, [("system", "assistant")], AiProvider.Openai);
+        var gemini = SemanticCacheKey.ComputeContextHash(
+            "auto", null, null, null, null, [("system", "assistant")], AiProvider.Gemini);
+
+        Assert.NotEqual(openAi, gemini);
+    }
+
+    [Fact]
     public void Context_hash_fields_cannot_be_shifted_into_each_other()
     {
         var a = SemanticCacheKey.ComputeContextHash("auto", "ab", null, null, null, [("user", "c")]);

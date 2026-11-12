@@ -116,7 +116,13 @@ export function AiWorkspacePage() {
         </div>
 
         <div className="sticky bottom-4 z-10">
-          <Composer streaming={chat.streaming} onSend={chat.send} onStop={chat.stop} />
+          <Composer
+            streaming={chat.streaming}
+            provider={chat.provider}
+            onProviderChange={chat.setProvider}
+            onSend={chat.send}
+            onStop={chat.stop}
+          />
         </div>
       </div>
 

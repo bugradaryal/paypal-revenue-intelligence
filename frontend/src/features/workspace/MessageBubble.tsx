@@ -52,19 +52,21 @@ export function MessageBubble({ turn, isLast, disabled, onRegenerate, actions }:
       </span>
 
       <div className="grid min-w-0 flex-1 gap-3">
-        {turn.content ? (
-          <p className={cn('whitespace-pre-wrap text-sm leading-relaxed [overflow-wrap:anywhere]', streaming && 'after:ml-0.5 after:inline-block after:h-4 after:w-1.5 after:translate-y-0.5 after:animate-pulse after:rounded-sm after:bg-brand-500 after:content-[""]')}>
-            {turn.content}
-          </p>
-        ) : (
-          streaming && (
-            <p role="status" className="flex items-center gap-1.5 text-sm text-ink-soft">
-              <span className="size-1.5 animate-bounce rounded-full bg-ink-faint [animation-delay:-0.3s]" />
-              <span className="size-1.5 animate-bounce rounded-full bg-ink-faint [animation-delay:-0.15s]" />
-              <span className="size-1.5 animate-bounce rounded-full bg-ink-faint" />
-              <span className="sr-only">{t('workspace.thinking')}</span>
-            </p>
-          )
+        {(turn.content || streaming) && (
+          <div className="w-full rounded-2xl border border-line-strong bg-surface-card px-4 py-3 shadow-sm">
+            {turn.content ? (
+              <p className={cn('whitespace-pre-wrap text-sm leading-relaxed [overflow-wrap:anywhere]', streaming && 'after:ml-0.5 after:inline-block after:h-4 after:w-1.5 after:translate-y-0.5 after:animate-pulse after:rounded-sm after:bg-brand-500 after:content-[""]')}>
+                {turn.content}
+              </p>
+            ) : (
+              <p role="status" className="flex items-center gap-1.5 text-sm text-ink-soft">
+                <span className="size-1.5 animate-bounce rounded-full bg-ink-faint [animation-delay:-0.3s]" />
+                <span className="size-1.5 animate-bounce rounded-full bg-ink-faint [animation-delay:-0.15s]" />
+                <span className="size-1.5 animate-bounce rounded-full bg-ink-faint" />
+                <span className="sr-only">{t('workspace.thinking')}</span>
+              </p>
+            )}
+          </div>
         )}
 
         {turn.status === 'error' && (

@@ -1,5 +1,6 @@
 using FluentValidation;
 using PRI.Application.AiGateway.DTOs;
+using PRI.Domain.AiGateway.Enums;
 
 namespace PRI.Application.AiGateway.Validators;
 
@@ -14,6 +15,10 @@ public sealed class CompletionRequestValidator : AbstractValidator<CompletionReq
     public CompletionRequestValidator()
     {
         RuleFor(x => x.Model).MaximumLength(100);
+
+        RuleFor(x => x.Provider)
+            .Must(provider => provider is null or AiProvider.Openai or AiProvider.Gemini)
+            .WithMessage("provider must be 'openai' or 'gemini'.");
 
         RuleFor(x => x.TaskType)
             .MaximumLength(50)

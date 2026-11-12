@@ -8,16 +8,28 @@ namespace PRI.Application.AiGateway.Services;
 
 /// <summary>
 /// Kural tabanlı model yönlendirici. Model sabitlenmişse yalnızca o model denenir (sessizce başka modele geçilmez).
-/// "auto" veya boşsa görev tipine uyan yönlendirme kuralı, yoksa "default" kuralı, o da yoksa en ucuz etkin model kullanılır.
+/// "auto" veya boşsa görev kuralının modelleri ve diğer sağlayıcıların adayları görev uygunluğu ile fiyata göre sıralanır.
 /// </summary>
 public sealed class ModelRouter(IProviderModelRepository models, IRoutingRuleRepository rules) : IModelRouter
 {
     private const string Auto = "auto";
 
-    public async Task<RoutePlan> BuildPlanAsync(string? requestedModel, string? taskType, CancellationToken cancellationToken)
+    public async Task<RoutePlan> BuildPlanAsync(
+        string? requestedModel,
+        string? taskType,
+        CancellationToken cancellationToken,
+        AiProvider? provider = null)
     {
         var normalizedTaskType = string.IsNullOrWhiteSpace(taskType) ? null : taskType.Trim().ToLowerInvariant();
         var enabled = (await models.ListAsync(cancellationToken)).Where(m => m.IsEnabled).ToList();
+
+        if (provider is not null && provider is not (AiProvider.Openai or AiProvider.Gemini))
+        {
+            throw new RequestValidationException(new Dictionary<string, string[]>
+            {
+                ["provider"] = ["Only OpenAI and Gemini providers are supported."]
+            });
+        }
 
         var pinned = requestedModel?.Trim();
         if (!string.IsNullOrEmpty(pinned) && !string.Equals(pinned, Auto, StringComparison.OrdinalIgnoreCase))
@@ -28,7 +40,25 @@ public sealed class ModelRouter(IProviderModelRepository models, IRoutingRuleRep
                     ["model"] = [$"Unknown or disabled model '{pinned}'. See GET /api/v1/gateway/models."]
                 });
 
+            if (provider is not null && model.Provider != provider)
+            {
+                throw new RequestValidationException(new Dictionary<string, string[]>
+                {
+                    ["provider"] = [$"Model '{pinned}' does not belong to provider '{provider}'."]
+                });
+            }
+
             return new RoutePlan([model], "explicit", normalizedTaskType, null);
+        }
+
+        var candidates = provider is null
+            ? enabled
+            : enabled.Where(model => model.Provider == provider).ToList();
+        if (provider is not null && candidates.Count == 0)
+        {
+            throw new BusinessRuleException(
+                "provider_not_available",
+                $"No enabled model is available for provider '{provider}'.");
         }
 
         var rule = normalizedTaskType is null ? null : await rules.GetByTaskTypeAsync(normalizedTaskType, cancellationToken);
@@ -39,7 +69,7 @@ public sealed class ModelRouter(IProviderModelRepository models, IRoutingRuleRep
         {
             foreach (var id in new[] { rule.PrimaryModelId }.Concat(rule.FallbackModelIds))
             {
-                var model = enabled.FirstOrDefault(m => m.Id == id);
+                var model = candidates.FirstOrDefault(m => m.Id == id);
                 if (model is not null && plan.All(p => p.Id != model.Id))
                 {
                     plan.Add(model);
@@ -48,7 +78,23 @@ public sealed class ModelRouter(IProviderModelRepository models, IRoutingRuleRep
 
             if (plan.Count > 0)
             {
-                var ordered = plan
+                var routingCandidates = new List<ProviderModel>(plan);
+                if (provider is null)
+                {
+                    var representedProviders = plan.Select(model => model.Provider).ToHashSet();
+                    var providerAlternatives = enabled
+                        .Where(model => model.Provider is AiProvider.Openai or AiProvider.Gemini
+                                        && !representedProviders.Contains(model.Provider))
+                        .GroupBy(model => model.Provider)
+                        .Select(group => group
+                            .OrderByDescending(model => ScoreModelForTask(model, normalizedTaskType))
+                            .ThenBy(model => model.OutputPricePerMillionUsd)
+                            .ThenBy(model => model.InputPricePerMillionUsd)
+                            .First());
+                    routingCandidates.AddRange(providerAlternatives);
+                }
+
+                var ordered = routingCandidates
                     .OrderByDescending(m => ScoreModelForTask(m, normalizedTaskType))
                     .ThenBy(m => m.OutputPricePerMillionUsd)
                     .ThenBy(m => m.InputPricePerMillionUsd)
@@ -58,7 +104,7 @@ public sealed class ModelRouter(IProviderModelRepository models, IRoutingRuleRep
             }
         }
 
-        var heuristic = enabled
+        var heuristic = candidates
             .OrderByDescending(m => ScoreModelForTask(m, normalizedTaskType))
             .ThenBy(m => m.OutputPricePerMillionUsd)
             .ThenBy(m => m.InputPricePerMillionUsd)
@@ -95,8 +141,8 @@ public sealed class ModelRouter(IProviderModelRepository models, IRoutingRuleRep
             },
             _ => model.Tier switch
             {
-                ModelTier.Standard => 80,
-                ModelTier.Economy => 75,
+                ModelTier.Economy => 80,
+                ModelTier.Standard => 75,
                 ModelTier.Premium => 60,
                 _ => 10
             }

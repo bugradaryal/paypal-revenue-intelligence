@@ -8,9 +8,13 @@ export interface ChatMessageInput {
   content: string
 }
 
+export type ChatProvider = 'openai' | 'gemini'
+export type ChatProviderSelection = 'auto' | ChatProvider
+
 export interface ChatRequest {
   messages: ChatMessageInput[]
   model?: string
+  provider?: ChatProvider
 }
 
 export interface ChatUsage {

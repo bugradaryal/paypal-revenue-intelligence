@@ -46,15 +46,3 @@ internal sealed class PromptTokensDetails
 {
     public int CachedTokens { get; set; }
 }
-
-internal sealed class OpenAiErrorEnvelope
-{
-    public OpenAiError? Error { get; set; }
-}
-
-internal sealed class OpenAiError
-{
-    public string? Message { get; set; }
-
-    public string? Code { get; set; }
-}
