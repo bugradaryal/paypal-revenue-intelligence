@@ -46,9 +46,11 @@ public interface IPayPalClient
 {
     bool IsConfigured { get; }
 
+    bool HasWebhookId { get; }
+
     string Environment { get; }
 
-    /// <summary>Obtains/validates an OAuth client-credentials token without exposing it to callers.</summary>
+    /// <summary>Checks OAuth credentials and read access to PayPal Transaction Search without writing data.</summary>
     Task TestConnectionAsync(CancellationToken cancellationToken);
 
     /// <summary>Transaction Search. PayPal tek istekte en fazla 31 günlük aralığa izin verir.</summary>

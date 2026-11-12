@@ -58,9 +58,10 @@ export interface PayPalSyncRun {
 
 export interface PayPalConnection {
   configured: boolean
+  webhookIdConfigured: boolean
   connected: boolean
   environment: PayPalEnvironment
-  apiAuthenticationStatus: 'authenticated' | 'failed' | 'not_configured'
+  apiAccessStatus: 'available' | 'denied' | 'not_configured'
   lastSuccessfulSyncAt: string | null
   latestSync: PayPalSyncRun | null
   error: string | null

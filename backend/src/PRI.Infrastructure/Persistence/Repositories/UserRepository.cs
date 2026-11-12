@@ -24,6 +24,9 @@ public sealed class UserRepository(AppDbContext db) : IUserRepository
     public Task<int> CountByRoleAsync(UserRole role, CancellationToken cancellationToken) =>
         db.Users.CountAsync(u => u.Role == role, cancellationToken);
 
+    public Task<int> CountActiveByRoleAsync(UserRole role, CancellationToken cancellationToken) =>
+        db.Users.CountAsync(u => u.Role == role && u.IsActive, cancellationToken);
+
     public void Add(User user) => db.Users.Add(user);
 
     public void Remove(User user) => db.Users.Remove(user);

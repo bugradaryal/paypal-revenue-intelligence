@@ -23,6 +23,14 @@ public sealed class AdminUsersController(IUserManagementService users) : ApiCont
         return StatusCode(StatusCodes.Status201Created, user);
     }
 
+    [HttpPost("{id:guid}/activate")]
+    public async Task<ActionResult<UserDto>> Activate(Guid id, CancellationToken cancellationToken) =>
+        Ok(await users.ActivateAsync(id, cancellationToken));
+
+    [HttpPost("{id:guid}/deactivate")]
+    public async Task<ActionResult<UserDto>> Deactivate(Guid id, CancellationToken cancellationToken) =>
+        Ok(await users.DeactivateAsync(id, User.GetUserId(), cancellationToken));
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {

@@ -12,6 +12,7 @@ public static class ErrorCodes
     public const string Conflict = "conflict";
     public const string BusinessRuleViolation = "business_rule_violation";
     public const string BadGateway = "bad_gateway";
+    public const string TooManyRequests = "too_many_requests";
     public const string InternalError = "internal_error";
 
     public static string FromStatusCode(int? statusCode) => statusCode switch
@@ -23,6 +24,7 @@ public static class ErrorCodes
         405 => MethodNotAllowed,
         409 => Conflict,
         422 => BusinessRuleViolation,
+        429 => TooManyRequests,
         502 => BadGateway,
         >= 500 => InternalError,
         _ => "error"

@@ -8,5 +8,9 @@ public interface IUserManagementService
 
     Task<UserDto> CreateAsync(CreateUserRequest request, CancellationToken cancellationToken);
 
+    Task<UserDto> ActivateAsync(Guid userId, CancellationToken cancellationToken);
+
+    Task<UserDto> DeactivateAsync(Guid userId, Guid actingUserId, CancellationToken cancellationToken);
+
     Task DeleteAsync(Guid userId, Guid actingUserId, CancellationToken cancellationToken);
 }

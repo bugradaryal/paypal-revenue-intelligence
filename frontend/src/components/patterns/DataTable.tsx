@@ -39,6 +39,7 @@ interface DataTableProps<T> {
   getRowId: (row: T) => string
   /** Visually hidden table title for screen readers. */
   caption: string
+  tableClassName?: string
   loading?: boolean
   /** Refetching while old rows are still shown. */
   fetching?: boolean
@@ -61,6 +62,7 @@ export function DataTable<T>({
   rows,
   getRowId,
   caption,
+  tableClassName,
   loading,
   fetching,
   error,
@@ -107,7 +109,7 @@ export function DataTable<T>({
         <EmptyState icon={<Inbox />} title={emptyTitle} description={emptyDescription} />
       ) : (
         <div className={cn('transition-opacity', fetching && 'opacity-60')} aria-busy={loading || fetching || undefined}>
-          <Table>
+          <Table className={tableClassName}>
             <caption className="sr-only">{caption}</caption>
             <TableHead>
               <tr>
@@ -118,7 +120,7 @@ export function DataTable<T>({
                       key={column.key}
                       numeric={column.numeric}
                       aria-sort={sorted ? (sorted === 'asc' ? 'ascending' : 'descending') : undefined}
-                      className={cn(column.hideBelow && HIDE[column.hideBelow])}
+                      className={cn(column.hideBelow && HIDE[column.hideBelow], column.className)}
                     >
                       {column.sortKey && onSortChange ? (
                         <button

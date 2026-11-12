@@ -9,10 +9,18 @@ export interface AuthUser {
   email: string
   displayName: string
   role: UserRole
+  isActive: boolean
+  isPendingApproval: boolean
 }
 
 export interface LoginRequest {
   email: string
+  password: string
+}
+
+export interface RegistrationRequest {
+  email: string
+  displayName: string
   password: string
 }
 

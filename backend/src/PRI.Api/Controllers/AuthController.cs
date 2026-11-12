@@ -15,6 +15,15 @@ public sealed class AuthController(IAuthService authService) : ApiControllerBase
     public async Task<ActionResult<LoginResponse>> Login(LoginRequest request, CancellationToken cancellationToken) =>
         Ok(await authService.LoginAsync(request, cancellationToken));
 
+    [HttpPost("register")]
+    [AllowAnonymous]
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("public-registration")]
+    public async Task<IActionResult> Register(RegisterRequest request, CancellationToken cancellationToken)
+    {
+        await authService.RegisterAsync(request, cancellationToken);
+        return Accepted();
+    }
+
     [HttpGet("me")]
     [Authorize]
     public async Task<ActionResult<UserDto>> Me(CancellationToken cancellationToken) =>

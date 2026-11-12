@@ -16,7 +16,8 @@ public sealed class PayPalClient(
     PayPalAccessTokenProvider tokenProvider,
     PayPalCredentialStore credentialStore,
     IOptions<PayPalSettings> options,
-    ILogger<PayPalClient> logger) : IPayPalClient
+    ILogger<PayPalClient> logger,
+    TimeProvider timeProvider) : IPayPalClient
 {
     private const int PageSize = 100;
     private static readonly TimeSpan MaxSearchRange = TimeSpan.FromDays(31);
@@ -28,11 +29,14 @@ public sealed class PayPalClient(
 
     public bool IsConfigured => credentialStore.IsConfigured;
 
+    public bool HasWebhookId => !string.IsNullOrWhiteSpace(credentialStore.WebhookId);
+
     public string Environment => options.Value.Environment;
 
     public async Task TestConnectionAsync(CancellationToken cancellationToken)
     {
-        await tokenProvider.GetAccessTokenAsync(cancellationToken);
+        var toUtc = timeProvider.GetUtcNow().UtcDateTime.AddMinutes(-1);
+        await SearchTransactionsAsync(toUtc.AddMinutes(-5), toUtc, 1, cancellationToken);
     }
 
     public async Task<PayPalTransactionPage> SearchTransactionsAsync(
@@ -151,57 +155,78 @@ public sealed class PayPalClient(
 
     private async Task<T> GetAsync<T>(string relativeUrl, CancellationToken cancellationToken)
     {
-        var token = await tokenProvider.GetAccessTokenAsync(cancellationToken);
+        for (var attempt = 0; ; attempt++)
+        {
+            var token = await tokenProvider.GetAccessTokenAsync(cancellationToken);
 
-        using var request = new HttpRequestMessage(HttpMethod.Get, relativeUrl);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            using var request = new HttpRequestMessage(HttpMethod.Get, relativeUrl);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-        HttpResponseMessage response;
-        try
-        {
-            response = await http.SendAsync(request, cancellationToken);
-        }
-        catch (HttpRequestException ex)
-        {
-            logger.LogWarning(ex, "PayPal request to {Url} failed to reach PayPal.", relativeUrl);
-            throw new ExternalServiceException("paypal_unavailable", "PayPal could not be reached.");
-        }
-        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
-        {
-            throw new ExternalServiceException("paypal_unavailable", "The PayPal request timed out.");
-        }
-
-        using (response)
-        {
-            if (!response.IsSuccessStatusCode)
+            HttpResponseMessage response;
+            try
             {
-                if (response.StatusCode == HttpStatusCode.Unauthorized)
-                {
-                    tokenProvider.Invalidate();
-                }
-
-                var body = await response.Content.ReadAsStringAsync(cancellationToken);
-                logger.LogWarning(
-                    "PayPal returned HTTP {Status} for {Url}: {Body}",
-                    (int)response.StatusCode, relativeUrl, body.Length > 500 ? body[..500] : body);
-
-                var invoiceAccessDenied = response.StatusCode == HttpStatusCode.Forbidden
-                                          && relativeUrl.StartsWith("v2/invoicing/invoices", StringComparison.Ordinal);
-                var hint = response.StatusCode == HttpStatusCode.Forbidden
-                    ? invoiceAccessDenied
-                        ? " The Sandbox app does not have Invoicing access."
-                        : " Check whether the required PayPal Sandbox API is enabled."
-                    : string.Empty;
-
-                throw new ExternalServiceException(
-                    invoiceAccessDenied ? "paypal_invoicing_forbidden" : "paypal_unavailable",
-                    $"PayPal returned HTTP {(int)response.StatusCode}.{hint}");
+                response = await http.SendAsync(request, cancellationToken);
+            }
+            catch (HttpRequestException ex)
+            {
+                logger.LogWarning(ex, "PayPal request to {Url} failed to reach PayPal.", relativeUrl);
+                throw new ExternalServiceException("paypal_unavailable", "PayPal could not be reached.");
+            }
+            catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                throw new ExternalServiceException("paypal_unavailable", "The PayPal request timed out.");
             }
 
-            var result = await response.Content.ReadFromJsonAsync<T>(JsonOptions, cancellationToken);
+            using (response)
+            {
+                if (attempt == 0
+                    && response.StatusCode is (HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden))
+                {
+                    tokenProvider.Invalidate(token);
+                    continue;
+                }
 
-            return result ?? throw new ExternalServiceException("paypal_unavailable", "PayPal returned an empty response.");
+                if (!response.IsSuccessStatusCode)
+                {
+                    if (response.StatusCode == HttpStatusCode.Unauthorized)
+                    {
+                        tokenProvider.Invalidate(token);
+                    }
+
+                    var body = await response.Content.ReadAsStringAsync(cancellationToken);
+                    logger.LogWarning(
+                        "PayPal returned HTTP {Status} for {Url}: {Body}",
+                        (int)response.StatusCode, relativeUrl, body.Length > 500 ? body[..500] : body);
+
+                    var invoiceAccessDenied = response.StatusCode == HttpStatusCode.Forbidden
+                                              && relativeUrl.StartsWith("v2/invoicing/invoices", StringComparison.Ordinal);
+                    var transactionSearchAccessDenied = response.StatusCode == HttpStatusCode.Forbidden
+                                                        && relativeUrl.StartsWith("v1/reporting/transactions", StringComparison.Ordinal);
+                    var deniedProduct = invoiceAccessDenied
+                        ? "Invoicing"
+                        : transactionSearchAccessDenied
+                            ? "Transaction Search"
+                            : null;
+                    var hint = response.StatusCode == HttpStatusCode.Forbidden
+                        ? deniedProduct is not null
+                            ? $" The Sandbox app does not have {deniedProduct} access."
+                            : " Check whether the required PayPal Sandbox API is enabled."
+                        : string.Empty;
+
+                    throw new ExternalServiceException(
+                        invoiceAccessDenied
+                            ? "paypal_invoicing_forbidden"
+                            : transactionSearchAccessDenied
+                                ? "paypal_transaction_search_forbidden"
+                                : "paypal_unavailable",
+                        $"PayPal returned HTTP {(int)response.StatusCode}.{hint}");
+                }
+
+                var result = await response.Content.ReadFromJsonAsync<T>(JsonOptions, cancellationToken);
+
+                return result ?? throw new ExternalServiceException("paypal_unavailable", "PayPal returned an empty response.");
+            }
         }
     }
 

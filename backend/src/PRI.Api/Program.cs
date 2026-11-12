@@ -22,7 +22,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseRouting();
 app.UseCors(CorsSettings.PolicyName);
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();

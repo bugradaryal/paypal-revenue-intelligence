@@ -23,9 +23,10 @@ public sealed record SyncRunDto(
 
 public sealed record PayPalConnectionDto(
     bool Configured,
+    bool WebhookIdConfigured,
     bool Connected,
     string Environment,
-    string ApiAuthenticationStatus,
+    string ApiAccessStatus,
     DateTime? LastSuccessfulSyncAt,
     SyncRunDto? LatestSync,
     string? Error);

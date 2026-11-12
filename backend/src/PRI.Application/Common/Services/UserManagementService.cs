@@ -39,6 +39,46 @@ public sealed class UserManagementService(
         return ToDto(user);
     }
 
+    public async Task<UserDto> ActivateAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var user = await users.GetTrackedByIdAsync(userId, cancellationToken)
+            ?? throw new NotFoundException("User", userId);
+
+        if (!user.IsActive)
+        {
+            user.Activate();
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        return ToDto(user);
+    }
+
+    public async Task<UserDto> DeactivateAsync(Guid userId, Guid actingUserId, CancellationToken cancellationToken)
+    {
+        if (userId == actingUserId)
+        {
+            throw new ConflictException("You cannot deactivate your own account.", "cannot_deactivate_own_account");
+        }
+
+        var user = await users.GetTrackedByIdAsync(userId, cancellationToken)
+            ?? throw new NotFoundException("User", userId);
+
+        if (user.IsActive
+            && user.Role == UserRole.Admin
+            && await users.CountActiveByRoleAsync(UserRole.Admin, cancellationToken) <= 1)
+        {
+            throw new ConflictException("The last active administrator account cannot be deactivated.", "last_active_admin_required");
+        }
+
+        if (user.IsActive)
+        {
+            user.Deactivate();
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        return ToDto(user);
+    }
+
     public async Task DeleteAsync(Guid userId, Guid actingUserId, CancellationToken cancellationToken)
     {
         if (userId == actingUserId)
@@ -59,5 +99,6 @@ public sealed class UserManagementService(
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
-    private static UserDto ToDto(User user) => new(user.Id, user.Email, user.DisplayName, user.Role);
+    private static UserDto ToDto(User user) =>
+        new(user.Id, user.Email, user.DisplayName, user.Role, user.IsActive, user.IsPendingApproval);
 }

@@ -108,6 +108,7 @@ public class PlatformFlowTests(PriApiFactory factory) : IClassFixture<PriApiFact
         var created = await createdResponse.ReadAsync();
         Assert.Equal(email, created.Str("email"));
         Assert.Equal("member", created.Str("role"));
+        Assert.True(created.GetProperty("isActive").GetBoolean());
         Assert.False(created.TryGetProperty("password", out _));
         Assert.False(created.TryGetProperty("passwordHash", out _));
         var currentUser = await (await admin.GetAsync("/api/v1/auth/me")).ReadOkAsync();
@@ -154,6 +155,68 @@ public class PlatformFlowTests(PriApiFactory factory) : IClassFixture<PriApiFact
 
         var deletedUserLogin = await anonymous.PostAsJsonAsync("/api/v1/auth/login", new { email, password });
         Assert.Equal(HttpStatusCode.Unauthorized, deletedUserLogin.StatusCode);
+    }
+
+    [IntegrationFact]
+    public async Task Public_registration_requires_admin_activation_before_login()
+    {
+        var anonymous = factory.CreateAnonymousClient();
+        var email = $"request-{Guid.NewGuid():N}@example.test";
+        const string password = "PendingMemberPassword123!";
+
+        var registration = await anonymous.PostAsJsonAsync("/api/v1/auth/register", new
+        {
+            email,
+            displayName = "Pending Member",
+            password
+        });
+        Assert.Equal(HttpStatusCode.Accepted, registration.StatusCode);
+
+        var pendingLogin = await anonymous.PostAsJsonAsync("/api/v1/auth/login", new { email, password });
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, pendingLogin.StatusCode);
+        Assert.Equal("account_pending_approval", (await pendingLogin.ReadAsync()).Str("code"));
+
+        var admin = await factory.CreateAdminClientAsync();
+        var listedUsers = await (await admin.GetAsync("/api/v1/admin/users")).ReadOkAsync();
+        var pendingUser = Assert.Single(listedUsers.EnumerateArray(), user => user.Str("email") == email);
+        Assert.False(pendingUser.GetProperty("isActive").GetBoolean());
+
+        var activation = await admin.PostAsync($"/api/v1/admin/users/{pendingUser.Str("id")}/activate", content: null);
+        Assert.Equal(HttpStatusCode.OK, activation.StatusCode);
+        Assert.True((await activation.ReadAsync()).GetProperty("isActive").GetBoolean());
+
+        var approvedLogin = await anonymous.PostAsJsonAsync("/api/v1/auth/login", new { email, password });
+        Assert.Equal(HttpStatusCode.OK, approvedLogin.StatusCode);
+        var memberToken = (await approvedLogin.ReadAsync()).Str("accessToken");
+        var member = factory.CreateAnonymousClient();
+        member.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", memberToken);
+        Assert.Equal(HttpStatusCode.OK, (await member.GetAsync("/api/v1/auth/me")).StatusCode);
+
+        var deactivation = await admin.PostAsync($"/api/v1/admin/users/{pendingUser.Str("id")}/deactivate", content: null);
+        Assert.Equal(HttpStatusCode.OK, deactivation.StatusCode);
+        var deactivatedUser = await deactivation.ReadAsync();
+        Assert.False(deactivatedUser.GetProperty("isActive").GetBoolean());
+        Assert.False(deactivatedUser.GetProperty("isPendingApproval").GetBoolean());
+        Assert.Equal(HttpStatusCode.Unauthorized, (await member.GetAsync("/api/v1/auth/me")).StatusCode);
+
+        var inactiveLogin = await anonymous.PostAsJsonAsync("/api/v1/auth/login", new { email, password });
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, inactiveLogin.StatusCode);
+        Assert.Equal("account_inactive", (await inactiveLogin.ReadAsync()).Str("code"));
+
+        var reactivation = await admin.PostAsync($"/api/v1/admin/users/{pendingUser.Str("id")}/activate", content: null);
+        Assert.Equal(HttpStatusCode.OK, reactivation.StatusCode);
+        var restoredUser = await reactivation.ReadAsync();
+        Assert.True(restoredUser.GetProperty("isActive").GetBoolean());
+        Assert.False(restoredUser.GetProperty("isPendingApproval").GetBoolean());
+        Assert.Equal(HttpStatusCode.OK, (await anonymous.PostAsJsonAsync("/api/v1/auth/login", new { email, password })).StatusCode);
+
+        var adminUser = await (await admin.GetAsync("/api/v1/auth/me")).ReadOkAsync();
+        var selfDeactivation = await admin.PostAsync(
+            $"/api/v1/admin/users/{adminUser.Str("id")}/deactivate",
+            content: null);
+        Assert.Equal(HttpStatusCode.Conflict, selfDeactivation.StatusCode);
+        Assert.Equal("cannot_deactivate_own_account", (await selfDeactivation.ReadAsync()).Str("code"));
     }
 
     // ---------- demo veri ----------

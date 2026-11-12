@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { aiCostKeys } from '@/features/ai-cost/queries'
 import { revenueKeys } from '@/features/revenue/queries'
-import { env } from '@/config/env'
 import { api } from '@/services/adapters'
 import type { SavePayPalCredentialsRequest, UpdateBudgetRequest } from '@/services/types'
 
@@ -26,7 +25,6 @@ export const usePayPalConnection = () =>
   useQuery({
     queryKey: settingsKeys.paypalConnection(),
     queryFn: ({ signal }) => api.settings.getPayPalConnection({ signal }),
-    enabled: !env.isMock,
     staleTime: 30_000,
   })
 
@@ -47,11 +45,9 @@ export function useSyncPayPalTransactions() {
   return useMutation({
     mutationFn: (days: number) => api.settings.syncPayPalTransactions(days),
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: settingsKeys.paypalConnection() }),
-        queryClient.invalidateQueries({ queryKey: revenueKeys.all }),
-      ])
+      await queryClient.invalidateQueries({ queryKey: revenueKeys.all })
     },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: settingsKeys.paypalConnection() }),
   })
 }
 

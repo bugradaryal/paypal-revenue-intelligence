@@ -51,6 +51,8 @@ public sealed class RecordingPayPalClient : IPayPalClient
 
     public bool IsConfigured => true;
 
+    public bool HasWebhookId => false;
+
     public string Environment => "sandbox";
 
     public Task TestConnectionAsync(CancellationToken cancellationToken) => Task.CompletedTask;

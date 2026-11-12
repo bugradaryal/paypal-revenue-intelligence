@@ -13,6 +13,29 @@ import { buildModelCatalog, getMockBudget, setMockBudget } from './data'
 /** Mock of the planned settings endpoints. Shapes are PROPOSED (types/settings.ts). */
 
 let cacheEntries = 1284
+const initialSyncAt = new Date()
+let mockPayPalConnection: PayPalConnection = {
+  configured: true,
+  webhookIdConfigured: true,
+  connected: true,
+  environment: 'sandbox',
+  apiAccessStatus: 'available',
+  lastSuccessfulSyncAt: initialSyncAt.toISOString(),
+  latestSync: {
+    id: 'demo-paypal-sync-initial',
+    status: 'succeeded',
+    startedAt: initialSyncAt.toISOString(),
+    finishedAt: initialSyncAt.toISOString(),
+    rangeFrom: new Date(initialSyncAt.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+    rangeTo: initialSyncAt.toISOString(),
+    importedPaymentCount: 24,
+    importedInvoiceCount: 6,
+    skippedCount: 0,
+    invoiceImportSkipped: false,
+    error: null,
+  },
+  error: null,
+}
 
 export const mockSettings = {
   getBudget: (): AiBudgetSetting | null => getMockBudget(),
@@ -49,36 +72,55 @@ export const mockSettings = {
     return { deletedCount: removedCount }
   },
 
-  getPayPalConnection: (): PayPalConnection => ({
-    configured: false,
-    connected: false,
+  getPayPalConnection: (): PayPalConnection => mockPayPalConnection,
+
+  testPayPalConnection: (): PayPalTestConnectionResult => ({
+    connected: true,
     environment: 'sandbox',
-    apiAuthenticationStatus: 'not_configured',
-    lastSuccessfulSyncAt: null,
-    latestSync: null,
+    testedAt: new Date().toISOString(),
     error: null,
   }),
 
-  testPayPalConnection: (): PayPalTestConnectionResult => ({
-    connected: false,
-    environment: 'sandbox',
-    testedAt: new Date().toISOString(),
-    error: 'PayPal connection tests require real data mode.',
-  }),
-
-  savePayPalCredentials: (_request: SavePayPalCredentialsRequest): { configured: boolean } => {
-    throw new ApiError({
-      status: 400,
-      title: 'Saving PayPal credentials is unavailable in mock mode.',
-      code: 'mock_paypal_credentials',
-    })
+  savePayPalCredentials: (request: SavePayPalCredentialsRequest): { configured: boolean } => {
+    mockPayPalConnection = {
+      ...mockPayPalConnection,
+      configured: true,
+      webhookIdConfigured: request.webhookId.trim()
+        ? true
+        : mockPayPalConnection.webhookIdConfigured,
+    }
+    return { configured: true }
   },
 
-  syncPayPalTransactions: (_days: number): PayPalSyncRun => {
-    throw new ApiError({
-      status: 400,
-      title: 'PayPal sync is unavailable in mock mode.',
-      code: 'mock_paypal_sync',
-    })
+  syncPayPalTransactions: (days: number): PayPalSyncRun => {
+    if (!Number.isInteger(days) || days < 1 || days > 90) {
+      throw new ApiError({
+        status: 400,
+        title: 'Sync period must be between 1 and 90 days.',
+        code: 'validation_failed',
+      })
+    }
+
+    const now = new Date()
+    const timestamp = now.toISOString()
+    const run: PayPalSyncRun = {
+      id: `demo-paypal-sync-${now.getTime()}`,
+      status: 'succeeded',
+      startedAt: timestamp,
+      finishedAt: timestamp,
+      rangeFrom: new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString(),
+      rangeTo: timestamp,
+      importedPaymentCount: 8,
+      importedInvoiceCount: 2,
+      skippedCount: 0,
+      invoiceImportSkipped: false,
+      error: null,
+    }
+    mockPayPalConnection = {
+      ...mockPayPalConnection,
+      lastSuccessfulSyncAt: timestamp,
+      latestSync: run,
+    }
+    return run
   },
 }

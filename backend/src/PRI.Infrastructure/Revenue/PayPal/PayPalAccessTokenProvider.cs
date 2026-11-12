@@ -24,7 +24,13 @@ public sealed class PayPalAccessTokenProvider(
     private DateTime _expiresAtUtc;
 
     /// <summary>PayPal 401 döndüğünde çağrılır; bir sonraki istek yeni token alır.</summary>
-    public void Invalidate() => _token = null;
+    public void Invalidate(string? expectedToken = null)
+    {
+        if (expectedToken is null || string.Equals(_token, expectedToken, StringComparison.Ordinal))
+        {
+            _token = null;
+        }
+    }
 
     public async Task<string> GetAccessTokenAsync(CancellationToken cancellationToken)
     {
@@ -118,6 +124,14 @@ public sealed class PayPalAccessTokenProvider(
             {
                 throw new ExternalServiceException("paypal_unavailable", "PayPal returned an empty access token.");
             }
+
+            const string transactionSearchReadScope = "https://uri.paypal.com/services/reporting/search/read";
+            var scopes = body.Scope?.Split(' ', StringSplitOptions.RemoveEmptyEntries) ?? [];
+            var hasTransactionSearchReadScope = scopes.Contains(transactionSearchReadScope, StringComparer.Ordinal);
+            logger.LogInformation(
+                "PayPal OAuth granted Transaction Search read scope: {Granted}; scopes: {Scopes}",
+                hasTransactionSearchReadScope,
+                body.Scope ?? "(not returned)");
 
             // Süresi dolmadan 60 sn önce yenile.
             _expiresAtUtc = timeProvider.GetUtcNow().UtcDateTime.AddSeconds(Math.Max(body.ExpiresIn - 60, 30));

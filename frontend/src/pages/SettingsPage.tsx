@@ -26,6 +26,15 @@ import type { AiModelInfo } from '@/services/types'
 // A decimal with a "." separator and at most two digits, the format the contract uses for money.
 const AMOUNT = /^\d{1,12}(\.\d{1,2})?$/
 
+function isPayPalPermissionError(error: unknown): boolean {
+  if (error instanceof ApiError) {
+    return error.code === 'paypal_transaction_search_forbidden'
+      || error.code === 'paypal_invoicing_forbidden'
+  }
+
+  return typeof error === 'string' && /\bHTTP 403\b/i.test(error)
+}
+
 function BudgetCard() {
   const { t } = useI18n()
   const errorMessage = useErrorMessage()
@@ -220,27 +229,41 @@ function PayPalConnectionCard() {
   const data = connection.data
   const latestSync = sync.data ?? data?.latestSync
   const connected = test.data?.connected ?? data?.connected ?? false
-  const connectionError = !data?.configured
+  const rawConnectionError = !data?.configured
     ? null
     : test.data?.connected === false
-      ? t('settings.paypal.credentialsRejected')
+      ? test.data.error ?? t('settings.paypal.testFailed')
       : data?.error
-  const syncError = sync.isError ? errorMessage(sync.error) : latestSync?.error
+  const connectionError = isPayPalPermissionError(rawConnectionError) ? null : rawConnectionError
+  const rawSyncError = sync.isError ? sync.error : latestSync?.error
+  const syncError = isPayPalPermissionError(rawSyncError)
+    ? null
+    : sync.isError
+      ? errorMessage(sync.error)
+      : latestSync?.error
 
   function testConnection() {
     test.mutate(undefined, {
-      onSuccess: (result) =>
+      onSuccess: (result) => {
+        if (!result.connected && isPayPalPermissionError(result.error)) return
         toast({
           tone: result.connected ? 'success' : 'danger',
-          title: result.connected ? t('settings.paypal.testSucceeded') : result.error ?? t('settings.paypal.testFailed'),
-        }),
-      onError: (error) => toast({ tone: 'danger', title: errorMessage(error) }),
+          title: result.connected
+            ? t('settings.paypal.testSucceeded')
+            : result.error ?? t('settings.paypal.testFailed'),
+        })
+      },
+      onError: (error) => {
+        if (isPayPalPermissionError(error)) return
+        toast({ tone: 'danger', title: errorMessage(error) })
+      },
     })
   }
 
   function syncTransactions() {
     sync.mutate(30, {
-      onSuccess: (result) =>
+      onSuccess: (result) => {
+        if (result.status !== 'succeeded' && isPayPalPermissionError(result.error)) return
         toast({
           tone: result.status === 'succeeded' ? (result.invoiceImportSkipped ? 'warning' : 'success') : 'danger',
           title: result.status !== 'succeeded'
@@ -248,8 +271,12 @@ function PayPalConnectionCard() {
             : result.invoiceImportSkipped
               ? t('settings.paypal.invoiceImportSkipped')
               : t('settings.paypal.syncSucceeded'),
-        }),
-      onError: (error) => toast({ tone: 'danger', title: errorMessage(error) }),
+        })
+      },
+      onError: (error) => {
+        if (isPayPalPermissionError(error)) return
+        toast({ tone: 'danger', title: errorMessage(error) })
+      },
     })
   }
 
@@ -273,9 +300,7 @@ function PayPalConnectionCard() {
   return (
     <Card className="xl:col-span-2">
       <CardHeader title={t('settings.paypal.title')} description={t('settings.paypal.description')} />
-      {env.isMock ? (
-        <p className="text-sm text-ink-soft">{t('settings.paypal.realModeRequired')}</p>
-      ) : connection.isPending ? (
+      {connection.isPending ? (
         <div className="grid gap-3 sm:grid-cols-2">
           <Skeleton className="h-5 w-full" />
           <Skeleton className="h-5 w-full" />
@@ -297,12 +322,8 @@ function PayPalConnectionCard() {
               <dd><Badge tone={connected ? 'success' : 'warning'}>{t(connected ? 'settings.paypal.connected' : 'settings.paypal.disconnected')}</Badge></dd>
             </div>
             <div className="flex items-center justify-between gap-3 border-b border-line pb-2">
-              <dt className="text-ink-soft">{t('settings.paypal.environment')}</dt>
-              <dd className="font-medium">{t(`settings.paypal.environments.${data?.environment ?? 'sandbox'}`)}</dd>
-            </div>
-            <div className="flex items-center justify-between gap-3 border-b border-line pb-2">
-              <dt className="text-ink-soft">{t('settings.paypal.authentication')}</dt>
-              <dd>{t(`settings.paypal.authenticationStates.${test.data ? (test.data.connected ? 'authenticated' : 'failed') : data?.apiAuthenticationStatus ?? 'not_configured'}`)}</dd>
+              <dt className="text-ink-soft">{t('settings.paypal.apiAccess')}</dt>
+              <dd>{t(`settings.paypal.apiAccessStates.${test.data ? (test.data.connected ? 'available' : 'denied') : data?.apiAccessStatus ?? 'not_configured'}`)}</dd>
             </div>
             <div className="flex items-center justify-between gap-3 border-b border-line pb-2">
               <dt className="text-ink-soft">{t('settings.paypal.lastSuccessfulSync')}</dt>
@@ -315,18 +336,20 @@ function PayPalConnectionCard() {
           <form
             onSubmit={savePayPalCredentials}
             className={`grid gap-4 rounded-lg border p-4 ${
-              data?.configured && data.apiAuthenticationStatus !== 'failed'
+              data?.configured
                 ? 'border-line bg-surface-muted'
                 : 'border-warning/40 bg-warning-soft'
             }`}
           >
             <div className="grid gap-1">
               <h3 className="text-sm font-semibold">{t('settings.paypal.credentialsTitle')}</h3>
-              {(!data?.configured || data.apiAuthenticationStatus === 'failed') && (
-                <p className="text-sm">{t(data?.configured ? 'settings.paypal.credentialsRejected' : 'settings.paypal.credentialsMissing')}</p>
+              {!data?.configured && (
+                <p className="text-sm">{t('settings.paypal.credentialsMissing')}</p>
               )}
-              {data?.configured && <p className="text-sm text-ink-soft">{t('settings.paypal.credentialsStored')}</p>}
-              <p className="text-sm text-ink-soft">{t('settings.paypal.credentialsHelp')}</p>
+              {data?.configured && !env.isMock && (
+                <p className="text-sm text-ink-soft">{t('settings.paypal.credentialsStored')}</p>
+              )}
+              {!env.isMock && <p className="text-sm text-ink-soft">{t('settings.paypal.credentialsHelp')}</p>}
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label={t('settings.paypal.clientId')}>
@@ -361,13 +384,16 @@ function PayPalConnectionCard() {
                     id={id}
                     value={webhookId}
                     onChange={(event) => setWebhookId(event.target.value)}
+                    placeholder={data?.webhookIdConfigured ? '********' : undefined}
                     autoComplete="off"
                   />
                 )}
               </Field>
               <p className="self-end pb-2 text-xs text-ink-soft">{t('settings.paypal.webhookOptionalHelp')}</p>
             </div>
-            <p className="text-xs text-ink-soft">{t('settings.paypal.credentialsUpdateHelp')}</p>
+            {!env.isMock && (
+              <p className="text-xs text-ink-soft">{t('settings.paypal.credentialsUpdateHelp')}</p>
+            )}
             <div>
               <Button
                 type="submit"
@@ -385,6 +411,9 @@ function PayPalConnectionCard() {
             {latestSync ? (
               <>
                 <p>{t(`settings.paypal.syncStatuses.${latestSync.status}`)}</p>
+                <p className="text-xs text-ink-soft">
+                  {t('settings.paypal.syncStartedAt', { at: f.dateTime(latestSync.startedAt) })}
+                </p>
                 <p className="text-ink-soft">
                   {t('settings.paypal.syncCounts', {
                     payments: f.number(latestSync.importedPaymentCount),
@@ -408,10 +437,20 @@ function PayPalConnectionCard() {
             <Button variant="secondary" loading={test.isPending} onClick={testConnection}>
               {t('settings.paypal.testConnection')}
             </Button>
-            <Button loading={sync.isPending} disabled={!connected || test.isPending} onClick={syncTransactions}>
+            <Button
+              loading={sync.isPending}
+              disabled={!data?.configured || sync.isPending || test.isPending}
+              onClick={syncTransactions}
+            >
               {t('settings.paypal.syncTransactions')}
             </Button>
           </div>
+          {!env.isMock && (
+            <>
+              <p className="text-xs text-ink-faint">{t('settings.paypal.testHelp')}</p>
+              <p className="text-xs text-ink-faint">{t('settings.paypal.syncHelp')}</p>
+            </>
+          )}
         </div>
       )}
     </Card>

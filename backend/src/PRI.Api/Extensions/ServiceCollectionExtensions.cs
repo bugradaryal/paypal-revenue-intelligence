@@ -2,14 +2,17 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PRI.Api.Authentication;
 using PRI.Api.Configuration;
 using PRI.Api.Filters;
 using PRI.Api.Middleware;
+using PRI.Domain.Common.Interfaces;
 using PRI.Infrastructure.Auth;
 using PRI.Shared.Constants;
 
@@ -44,6 +47,20 @@ public static class ServiceCollectionExtensions
 
         services.AddHealthChecks();
         services.AddSingleton(TimeProvider.System);
+        services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            options.AddPolicy("public-registration", context =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    _ => new FixedWindowRateLimiterOptions
+                    {
+                        AutoReplenishment = true,
+                        PermitLimit = 5,
+                        Window = TimeSpan.FromMinutes(15),
+                        QueueLimit = 0
+                    }));
+        });
 
         services.AddSingleton<PRI.Api.BackgroundJobs.RecoveryActionQueue>();
         services.AddSingleton<PRI.Application.Revenue.Interfaces.IRecoveryActionQueue>(
@@ -137,6 +154,25 @@ public static class ServiceCollectionExtensions
                     ClockSkew = TimeSpan.FromMinutes(1),
                     NameClaimType = AuthClaims.UserId,
                     RoleClaimType = AuthClaims.Role
+                };
+                options.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = async context =>
+                    {
+                        var claim = context.Principal?.FindFirst(AuthClaims.UserId)?.Value;
+                        if (!Guid.TryParse(claim, out var userId))
+                        {
+                            context.Fail("The token does not identify a valid user.");
+                            return;
+                        }
+
+                        var users = context.HttpContext.RequestServices.GetRequiredService<IUserRepository>();
+                        var user = await users.GetByIdAsync(userId, context.HttpContext.RequestAborted);
+                        if (user is null || !user.IsActive)
+                        {
+                            context.Fail("The user account is not active.");
+                        }
+                    }
                 };
             })
             .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(ApiKeyDefaults.Scheme, null);

@@ -1,9 +1,15 @@
 import { useState, type FormEvent } from 'react'
-import { Trash2 } from 'lucide-react'
+import { CircleOff, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Badge, Button, Card, CardHeader, Dialog, Field, Input, Select, Skeleton, useToast } from '@/components/ui'
 import { DataTable, EmptyState, type Column } from '@/components/patterns'
-import { useAdminUsers, useCreateAdminUser, useDeleteAdminUser } from '@/features/users/queries'
+import {
+  useActivateAdminUser,
+  useAdminUsers,
+  useCreateAdminUser,
+  useDeactivateAdminUser,
+  useDeleteAdminUser,
+} from '@/features/users/queries'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { useI18n } from '@/i18n'
 import { useErrorMessage } from '@/i18n/useErrorMessage'
@@ -16,19 +22,35 @@ export function UsersPage() {
   const { user: currentUser } = useAuth()
   const users = useAdminUsers()
   const createUser = useCreateAdminUser()
+  const activateUser = useActivateAdminUser()
+  const deactivateUser = useDeactivateAdminUser()
   const deleteUser = useDeleteAdminUser()
   const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null)
   const [email, setEmail] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState<UserRole>('member')
+  const pendingCount = users.data?.filter((user) => user.isPendingApproval).length ?? 0
 
   const columns: Column<AdminUser>[] = [
-    { key: 'name', header: t('users.name'), cell: (user) => user.displayName },
-    { key: 'email', header: t('users.email'), cell: (user) => user.email },
+    {
+      key: 'name',
+      header: t('users.name'),
+      className: 'w-[15%]',
+      cell: (user) => <span className="block truncate" title={user.displayName}>{user.displayName}</span>,
+    },
+    {
+      key: 'email',
+      header: t('users.email'),
+      hideBelow: 'md',
+      className: 'w-[23%]',
+      cell: (user) => <span className="block truncate" title={user.email}>{user.email}</span>,
+    },
     {
       key: 'role',
       header: t('users.role'),
+      hideBelow: 'sm',
+      className: 'w-[12%]',
       cell: (user) => (
         <Badge tone={user.role === 'admin' ? 'brand' : 'neutral'}>
           {user.role === 'admin' ? t('users.roles.admin') : t('users.roles.member')}
@@ -36,20 +58,69 @@ export function UsersPage() {
       ),
     },
     {
+      key: 'status',
+      header: t('users.status'),
+      className: 'w-[24%]',
+      cell: (user) => (
+        <Badge size="sm" tone={user.isActive ? 'success' : user.isPendingApproval ? 'warning' : 'neutral'} dot>
+          {user.isActive ? t('users.active') : user.isPendingApproval ? t('users.pending') : t('users.inactive')}
+        </Badge>
+      ),
+    },
+    {
       key: 'actions',
       header: t('common.actions'),
+      className: 'w-[26%]',
       cell: (target) => (
-        <Button
-          variant="danger"
-          size="sm"
-          leadingIcon={<Trash2 className="size-4" />}
-          disabled={target.id === currentUser?.id}
-          aria-label={t('users.deleteAction', { email: target.email })}
-          title={target.id === currentUser?.id ? t('users.cannotDeleteSelf') : undefined}
-          onClick={() => setUserToDelete(target)}
-        >
-          {t('common.delete')}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {!target.isActive && (
+            <Button
+              variant="secondary"
+              size="sm"
+              loading={activateUser.isPending}
+              aria-label={t(target.isPendingApproval ? 'users.activateAction' : 'users.enableAction', { email: target.email })}
+              onClick={() =>
+                activateUser.mutate(target.id, {
+                  onSuccess: (user) => toast({ tone: 'success', title: t('users.activated', { email: user.email }) }),
+                })
+              }
+            >
+              {t(target.isPendingApproval ? 'users.activate' : 'users.enable')}
+            </Button>
+          )}
+          {target.isActive && (
+            <Button
+              variant="secondary"
+              size="sm"
+              leadingIcon={<CircleOff className="size-4" />}
+              loading={deactivateUser.isPending}
+              disabled={target.id === currentUser?.id}
+              aria-label={t(
+                target.id === currentUser?.id ? 'users.cannotDeactivateSelf' : 'users.deactivateAction',
+                { email: target.email },
+              )}
+              title={target.id === currentUser?.id ? t('users.cannotDeactivateSelf') : undefined}
+              onClick={() =>
+                deactivateUser.mutate(target.id, {
+                  onSuccess: (user) => toast({ tone: 'success', title: t('users.deactivated', { email: user.email }) }),
+                })
+              }
+            >
+              {t('users.deactivate')}
+            </Button>
+          )}
+          <Button
+            variant="danger"
+            size="sm"
+            leadingIcon={<Trash2 className="size-4" />}
+            disabled={target.id === currentUser?.id}
+            aria-label={t('users.deleteAction', { email: target.email })}
+            title={target.id === currentUser?.id ? t('users.cannotDeleteSelf') : undefined}
+            onClick={() => setUserToDelete(target)}
+          >
+            {t('common.delete')}
+          </Button>
+        </div>
       ),
     },
   ]
@@ -82,7 +153,13 @@ export function UsersPage() {
 
   return (
     <>
-      <PageHeader title={t('users.title')} description={t('users.description')} />
+      <PageHeader
+        title={t('users.title')}
+        description={t('users.description')}
+        actions={pendingCount > 0 ? <Badge tone="warning" dot>{t('users.pendingRequests', { count: pendingCount })}</Badge> : undefined}
+      />
+      {activateUser.isError && <p role="alert" className="mb-5 text-sm text-danger">{errorMessage(activateUser.error)}</p>}
+      {deactivateUser.isError && <p role="alert" className="mb-5 text-sm text-danger">{errorMessage(deactivateUser.error)}</p>}
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,0.75fr)]">
         <Card>
           <CardHeader title={t('users.listTitle')} description={t('users.listDescription')} />
@@ -102,6 +179,7 @@ export function UsersPage() {
           ) : (
             <DataTable
               caption={t('users.listTitle')}
+              tableClassName="table-fixed"
               columns={columns}
               rows={users.data}
               getRowId={(user) => user.id}

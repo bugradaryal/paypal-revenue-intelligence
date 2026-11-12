@@ -1,5 +1,5 @@
 import { http, setAuthHeaderProvider, setUnauthorizedHandler } from './http'
-import type { AuthUser, LoginRequest, LoginResponse } from './types'
+import type { AuthUser, LoginRequest, LoginResponse, RegistrationRequest } from './types'
 
 /**
  * Session handling for the JWT scheme in docs/API_CONTRACT.md section 4:
@@ -59,6 +59,10 @@ export async function login(request: LoginRequest, signal?: AbortSignal): Promis
   lastReason = null
   store({ accessToken: response.accessToken, expiresAtUtc: response.expiresAtUtc, user: response.user })
   return response.user
+}
+
+export async function register(request: RegistrationRequest, signal?: AbortSignal): Promise<void> {
+  await http.post<void>('auth/register', { body: request, signal })
 }
 
 export function logout(reason: Exclude<LogoutReason, null> = 'manual') {

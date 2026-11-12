@@ -20,6 +20,9 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(u => u.Role).HasConversion<string>().HasMaxLength(32).IsRequired();
 
+        builder.Property(u => u.IsActive).IsRequired().HasDefaultValue(true);
+        builder.Property(u => u.IsPendingApproval).IsRequired().HasDefaultValue(false);
+
         builder.Property(u => u.CreatedAtUtc).IsRequired();
     }
 }

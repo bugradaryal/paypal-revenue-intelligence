@@ -45,7 +45,7 @@ This keeps automation useful without removing human oversight.
 - **PayPal connection management:** Sandbox credentials, OAuth connection checks, manual transaction sync, and
   optional webhook notifications. If the Sandbox app cannot access Invoicing, invoice import is skipped with a
   warning while transaction synchronization continues.
-- **Admin tools:** user and role management for controlled access.
+- **Account access:** public member registration enters an administrator approval queue; admins can approve requests or continue creating active accounts and assigning roles.
 
 ## A product walkthrough
 

@@ -105,9 +105,10 @@ public sealed class PayPalSyncService(
 
         return new PayPalConnectionDto(
             payPal.IsConfigured,
+            payPal.HasWebhookId,
             test.Connected,
             payPal.Environment,
-            test.Connected ? "authenticated" : payPal.IsConfigured ? "failed" : "not_configured",
+            test.Connected ? "available" : payPal.IsConfigured ? "denied" : "not_configured",
             latestSuccessful?.FinishedAtUtc,
             latest is null ? null : ToDto(latest),
             test.Error);

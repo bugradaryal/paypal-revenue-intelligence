@@ -13,6 +13,8 @@ public interface IUserRepository
 
     Task<int> CountByRoleAsync(UserRole role, CancellationToken cancellationToken);
 
+    Task<int> CountActiveByRoleAsync(UserRole role, CancellationToken cancellationToken);
+
     void Add(User user);
 
     void Remove(User user);
