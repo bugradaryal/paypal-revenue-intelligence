@@ -57,6 +57,7 @@ If you received the project as a ZIP, extract it and change into the `paypal-rev
 │   ├── package.json
 │   └── package-lock.json
 ├── local-docker-compose.yml      # Actual Compose filename in this repository
+├── SETUP.md
 └── README.md
 ```
 
@@ -523,37 +524,4 @@ The repository includes a backend Dockerfile for the API and a Compose file for 
 | AI Cost estimates differ from provider billing | The application uses stored catalog prices and reported token usage; provider billing tiers and price changes can differ. |
 | Semantic cache is unavailable | Confirm PostgreSQL/pgvector support, cache configuration, and OpenAI embedding configuration. The gateway may continue without a cache hit. |
 | Saved PayPal credentials cannot be decrypted after restart | Ensure the same Data Protection key ring is persisted and mounted at `DataProtection:KeyRingPath`. |
-| Frontend build fails | Run `npm ci`, then `npm run check` and `npm run build`; use a Node.js release compatible with Vite 8. |
-
-## 15. Security notes
-
-- Never commit `.env`, provider keys, PayPal secrets, JWT keys, passwords, or credential exports.
-- Use separate secrets for database authentication, JWT signing, administrator login, PayPal, and AI providers.
-- Treat any credential-shaped value that has ever been committed or shared as compromised. Revoke/rotate it rather than merely deleting it from the latest file.
-- Keep PayPal and AI provider keys on the backend. `VITE_` variables are public browser configuration.
-- Use a strong JWT key (at least 32 characters) and protect it as a secret.
-- Keep the encrypted PayPal credential file and Data Protection key ring private, persistent, and backed up securely.
-- Use HTTPS for deployed frontend/API traffic and PayPal webhooks.
-- Limit administrator accounts and review user approval/activation.
-- Do not expose Swagger publicly without an intentional access policy.
-- Do not use the fictional demo dataset for financial decisions or claim that demo recommendations executed external actions.
-- Review provider usage and budget controls; real AI requests can incur charges.
-- The current implementation is Sandbox-only and is not a production payment-processing authorization.
-
-## 16. Verification checklist
-
-After setup, verify the relevant mode:
-
-- [ ] `docker compose -f local-docker-compose.yml ps` shows the database and API running (if using Compose).
-- [ ] `http://localhost:5000/health` responds (adjust the port if changed).
-- [ ] Swagger UI is available in Development at `/swagger`.
-- [ ] The seeded administrator can sign in.
-- [ ] The frontend opens at `http://localhost:5173`.
-- [ ] Mock mode displays clearly fictional sample records.
-- [ ] Real mode can authenticate and load implemented backend operations.
-- [ ] PayPal Sandbox connection test succeeds before attempting sync.
-- [ ] Sync results are reviewed for skipped records and invoice-import limitations.
-- [ ] AI provider configuration is tested before enabling real AI in a demonstration.
-- [ ] The fully offline demo uses `VITE_AI_SOURCE=mock`.
-
-For product scope and the judge-facing walkthrough, see [README.md](./README.md).
+| Frontend build fails | Run `npm ci`, then `npm run check` and `npm run build` to inspect compilation or i18n translation errors. |
