@@ -89,6 +89,73 @@ public class PlatformFlowTests(PriApiFactory factory) : IClassFixture<PriApiFact
         Assert.Equal("admin", me.Str("role"));
     }
 
+    [IntegrationFact]
+    public async Task Admin_can_create_users_with_roles_and_only_admins_can_manage_users()
+    {
+        var admin = await factory.CreateAdminClientAsync();
+        var email = $"member-{Guid.NewGuid():N}@example.test";
+        const string password = "MemberPassword123!";
+
+        var createdResponse = await admin.PostAsJsonAsync("/api/v1/admin/users", new
+        {
+            email,
+            displayName = "Customer Member",
+            password,
+            role = "member"
+        });
+
+        Assert.Equal(HttpStatusCode.Created, createdResponse.StatusCode);
+        var created = await createdResponse.ReadAsync();
+        Assert.Equal(email, created.Str("email"));
+        Assert.Equal("member", created.Str("role"));
+        Assert.False(created.TryGetProperty("password", out _));
+        Assert.False(created.TryGetProperty("passwordHash", out _));
+        var currentUser = await (await admin.GetAsync("/api/v1/auth/me")).ReadOkAsync();
+
+        var listed = await (await admin.GetAsync("/api/v1/admin/users")).ReadOkAsync();
+        Assert.Contains(listed.EnumerateArray(), user => user.Str("email") == email);
+
+        var duplicate = await admin.PostAsJsonAsync("/api/v1/admin/users", new
+        {
+            email = email.ToUpperInvariant(),
+            displayName = "Duplicate",
+            password,
+            role = "member"
+        });
+        Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
+        Assert.Equal("email_already_exists", (await duplicate.ReadAsync()).Str("code"));
+
+        var anonymous = factory.CreateAnonymousClient();
+        Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.GetAsync("/api/v1/admin/users")).StatusCode);
+        var login = await anonymous.PostAsJsonAsync("/api/v1/auth/login", new { email, password });
+        login.EnsureSuccessStatusCode();
+        var memberToken = (await login.ReadAsync()).Str("accessToken");
+        anonymous.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", memberToken);
+        Assert.Equal(HttpStatusCode.Forbidden, (await anonymous.GetAsync("/api/v1/admin/users")).StatusCode);
+
+        var invalidPassword = await admin.PostAsJsonAsync("/api/v1/admin/users", new
+        {
+            email = $"short-{Guid.NewGuid():N}@example.test",
+            displayName = "Short Password",
+            password = "short",
+            role = "member"
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, invalidPassword.StatusCode);
+
+        var selfDelete = await admin.DeleteAsync($"/api/v1/admin/users/{currentUser.Str("id")}");
+        Assert.Equal(HttpStatusCode.Conflict, selfDelete.StatusCode);
+        Assert.Equal("cannot_delete_own_account", (await selfDelete.ReadAsync()).Str("code"));
+
+        var delete = await admin.DeleteAsync($"/api/v1/admin/users/{created.Str("id")}");
+        Assert.Equal(HttpStatusCode.NoContent, delete.StatusCode);
+        var afterDelete = await (await admin.GetAsync("/api/v1/admin/users")).ReadOkAsync();
+        Assert.DoesNotContain(afterDelete.EnumerateArray(), user => user.Str("email") == email);
+
+        var deletedUserLogin = await anonymous.PostAsJsonAsync("/api/v1/auth/login", new { email, password });
+        Assert.Equal(HttpStatusCode.Unauthorized, deletedUserLogin.StatusCode);
+    }
+
     // ---------- demo veri ----------
 
     [IntegrationFact]

@@ -173,9 +173,9 @@ In real data mode, **Settings** shows the configured PayPal Sandbox connection a
 Admin users can test OAuth authentication and import the previous 30 days of transactions; a successful sync
 refreshes revenue data. Client ID and Secret are sufficient for connection tests and manual synchronization.
 Webhook ID is optional and only needed to receive automatic PayPal notifications: create a webhook in the Sandbox
-app pointed at the public API URL ending in `/api/v1/webhooks/paypal`, select payment capture events, then enter
-its ID in Settings. The API stores these values encrypted in its local application data and never returns them.
-Saving new values replaces the old ones. The current
+app pointed at the public API URL ending in `/api/v1/webhooks/paypal` (or use the API root URL; both POST routes
+are accepted), select payment capture events, then enter its ID in Settings. The API stores these values encrypted
+in its local application data and never returns them. Saving new values replaces the old ones. The current
 version supports one Sandbox business account only; Live and multi-account OAuth are not supported. For a
 multi-instance deployment, configure a shared protected credential-store path and persist the ASP.NET Core Data
 Protection key ring securely across restarts.
@@ -215,7 +215,7 @@ records are not deleted. This setting is intended for local development only, no
 
 ## AI Workspace and Settings
 
-**AI Workspace** (`/ai-workspace`) is a streaming chat. The client keeps the conversation and sends the history with every request (the contract has no server-side conversations). Each answer shows its model, tokens and cost, and a cache hit is labelled free. If the assistant proposes an action, it appears as the same suggestion card used on the Recovery page, with the same approval rule and confirmation dialog. Nothing external happens until the user approves.
+**AI Workspace** (`/ai-workspace`) sends the conversation history to `POST /api/v1/gateway/completions`; the backend routes it to the configured AI provider. The current completion endpoint returns a whole answer rather than streaming tokens, so the chat displays the response after generation finishes. Each answer shows its model, tokens and cost. Recovery suggestions remain separate and require the user's approval before any executable action.
 
 **Settings** (`/settings`) holds language and dark mode (stored in this browser), the AI budget, the response cache (entry count and clear) and a read-only model catalog.
 

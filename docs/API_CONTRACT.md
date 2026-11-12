@@ -8,6 +8,7 @@ Frontend ve backend için tek doğruluk kaynağı. `API_NEEDS.md` ile bu dosya �
 
 | Sürüm | Tarih | Değişiklik |
 |---|---|---|
+| 0.5 | 2026-11-12 | Admin-only kullanıcı listeleme ve rol atanmış kullanıcı oluşturma uçları eklendi (bölüm 4). |
 | 0.4 | 2026-11-11 | PayPal bağlantı durumu, şifreli kimlik bilgisi yönetimi, OAuth bağlantı testi ve idempotent işlem eşitleme uçları eklendi (bölüm 5). |
 | 0.3 | 2026-11-07 | `API_NEEDS.md` yanıtlandı (bölüm 6). **Kırıcı:** para `amount` artık string; sayfalama alanı `totalItems`; sıralama `sortBy`/`sortDir`; enum değerleri snake_case (`user.role`: `admin` / `member`); tüm zaman damgaları `Z` ile biter (`/system/ping` dahil). Gün 2-4 endpoint şemaları "Planlı (şema kabul edildi)" olarak eklendi. |
 | 0.2 | 2026-11-07 | Kimlik doğrulama: `POST /auth/login`, `GET /auth/me`, JWT kuralları. `/health` artık veritabanını da kontrol eder. |
@@ -79,8 +80,8 @@ Planlı özel kodlar (`provider_unavailable` gibi) ilgili endpoint hazır olduğ
 
 - JWT Bearer. Frontend `POST /auth/login` çağırır, dönen `accessToken`'ı korumalı her istekte `Authorization: Bearer <accessToken>` ile gönderir (frontend'deki `setAuthHeaderProvider` kancası buna uygundur).
 - Token süresi 60 dakikadır (`expiresAtUtc`). Refresh token yoktur; `401` alınca yeniden login gerekir.
-- Korumalı olmayan uçlar: `/health`, `/api/v1/system/ping`, `POST /api/v1/auth/login`, `POST /api/v1/webhooks/paypal` (imza ile doğrulanır). Diğer tüm uçlar token ister.
-- Roller: `admin`, `member` (`user.role`). Hackathon için tek demo kullanıcı yeterlidir, ama giriş gerçektir (token şart).
+- Korumalı olmayan uçlar: `/health`, `/api/v1/system/ping`, `POST /api/v1/auth/login`, `POST /api/v1/webhooks/paypal` ve kök `POST /` (PayPal imzası ile doğrulanır). Diğer tüm uçlar token ister.
+- Roller: `admin`, `member` (`user.role`). Açık kayıt yoktur; yeni kullanıcıları yalnızca admin oluşturabilir. Oluşturma isteğindeki parola en az 12 karakter olmalıdır.
 
 ## 5. Endpoint durumları
 
@@ -91,10 +92,17 @@ Planlı özel kodlar (`provider_unavailable` gibi) ilgili endpoint hazır olduğ
 | GET | `/health` | Yok | Servis ve veritabanı sağlığı (düz metin) |
 | GET | `/api/v1/system/ping` | Yok | Bağlantı ve CORS testi |
 | POST | `/api/v1/auth/login` | Yok | E-posta ve şifre ile giriş |
+| GET | `/api/v1/admin/users` | Admin | Kullanıcıları rol bilgisiyle listeler |
+| POST | `/api/v1/admin/users` | Admin | Admin veya member rolünde kullanıcı oluşturur; parolayı yanıtlamaz |
+| DELETE | `/api/v1/admin/users/{id}` | Admin | Kullanıcıyı kalıcı olarak siler; kendi hesabı ve son admin silinemez |
 | GET | `/api/v1/paypal/connection` | Admin | PayPal Sandbox bağlantı ve son eşitleme durumu |
 | PUT | `/api/v1/paypal/credentials` | Admin | Sandbox kimlik bilgilerini şifreli saklar; secret yanıtlanmaz |
 | POST | `/api/v1/paypal/test-connection` | Admin | PayPal OAuth kimlik doğrulamasını sınar; token döndürmez |
 | POST | `/api/v1/paypal/sync?days=30` | Admin | PayPal fatura ve işlemlerini idempotent olarak içe aktarır |
+
+**POST `/api/v1/admin/users`** isteği `{ "email": "user@example.com", "displayName": "Example User", "password": "at-least-12-characters", "role": "member" }`. `role` yalnızca `admin` veya `member` olabilir. Yanıt `201` ve user DTO'sudur; parola veya parola özeti içermez. Aynı e-posta için `409 email_already_exists`, geçersiz alanlar için `400 validation_failed` döner. `GET /api/v1/admin/users` yanıtı kullanıcı DTO'larının dizisidir.
+
+**DELETE `/api/v1/admin/users/{id}`** başarılı olduğunda `204` döner. Admin kendi hesabını silemez (`409 cannot_delete_own_account`) ve son admin hesabı silinemez (`409 last_admin_required`); bulunmayan kullanıcı için `404 not_found` döner.
 | GET | `/api/v1/auth/me` | Bearer | Token sahibi kullanıcı |
 
 **GET `/api/v1/system/ping`** yanıtı:
@@ -310,7 +318,7 @@ explains that PayPal connection actions are unavailable.
 ```
 Gün 2  GET /revenue/invoices · GET /revenue/customers
        POST /revenue/sync · GET /revenue/sync/status
-       POST /webhooks/paypal
+       POST /webhooks/paypal (POST / alias)
 Gün 3  POST /gateway/completions
 ```
 

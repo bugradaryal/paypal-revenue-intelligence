@@ -29,6 +29,13 @@ public sealed class PayPalSyncService(
 
     public async Task<SyncRunDto> SyncAsync(int days, CancellationToken cancellationToken)
     {
+        if (!payPal.IsConfigured)
+        {
+            throw new BusinessRuleException(
+                "paypal_not_configured",
+                "PayPal credentials have not been configured.");
+        }
+
         var now = timeProvider.GetUtcNow().UtcDateTime;
 
         if (await syncRuns.HasRunningSinceAsync(now - StaleRunAfter, cancellationToken))
@@ -88,7 +95,9 @@ public sealed class PayPalSyncService(
 
     public async Task<PayPalConnectionDto> GetConnectionAsync(CancellationToken cancellationToken)
     {
-        var test = await TestConnectionAsync(cancellationToken);
+        var test = payPal.IsConfigured
+            ? await TestConnectionAsync(cancellationToken)
+            : new PayPalTestConnectionDto(false, payPal.Environment, timeProvider.GetUtcNow().UtcDateTime, null);
         var latest = await syncRuns.GetLatestAsync(cancellationToken);
         var latestSuccessful = await syncRuns.GetLatestSuccessfulAsync(cancellationToken);
 
@@ -105,6 +114,11 @@ public sealed class PayPalSyncService(
     public async Task<PayPalTestConnectionDto> TestConnectionAsync(CancellationToken cancellationToken)
     {
         var testedAt = timeProvider.GetUtcNow().UtcDateTime;
+        if (!payPal.IsConfigured)
+        {
+            return new PayPalTestConnectionDto(false, payPal.Environment, testedAt, null);
+        }
+
         try
         {
             await payPal.TestConnectionAsync(cancellationToken);

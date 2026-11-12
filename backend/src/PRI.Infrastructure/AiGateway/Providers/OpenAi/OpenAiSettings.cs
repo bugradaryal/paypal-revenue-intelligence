@@ -9,8 +9,6 @@ public sealed class OpenAiSettings
     /// <summary>Gizli bilgi: user-secrets / environment variable ile verilir, repoya yazılmaz, frontend'e gönderilmez.</summary>
     public string ApiKey { get; init; } = string.Empty;
 
-    public string BaseUrl { get; init; } = DefaultBaseUrl;
-
     /// <summary>Semantic cache aramaları için embedding modeli.</summary>
     public string EmbeddingModel { get; init; } = "text-embedding-3-small";
 

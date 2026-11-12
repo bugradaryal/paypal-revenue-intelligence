@@ -329,9 +329,11 @@ function PayPalConnectionCard() {
                 {({ id }) => (
                   <Input
                     id={id}
+                    type="password"
                     value={clientId}
                     onChange={(event) => setClientId(event.target.value)}
-                    autoComplete="off"
+                    placeholder={data?.configured ? '********' : undefined}
+                    autoComplete="new-password"
                     required
                   />
                 )}
@@ -343,6 +345,7 @@ function PayPalConnectionCard() {
                     type="password"
                     value={clientSecret}
                     onChange={(event) => setClientSecret(event.target.value)}
+                    placeholder={data?.configured ? '********' : undefined}
                     autoComplete="new-password"
                     required
                   />

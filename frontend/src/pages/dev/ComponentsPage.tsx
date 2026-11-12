@@ -139,7 +139,6 @@ export function ComponentsPage() {
                     defaultValue="openai"
                     options={[
                       { value: 'openai', label: 'OpenAI' },
-                      { value: 'anthropic', label: 'Anthropic' },
                       { value: 'google', label: 'Google' },
                     ]}
                   />

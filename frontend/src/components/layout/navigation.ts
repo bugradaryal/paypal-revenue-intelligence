@@ -1,7 +1,7 @@
-import { CreditCard, Gauge, HandCoins, LayoutDashboard, Settings, Sparkles, type LucideIcon } from 'lucide-react'
+import { CreditCard, Gauge, HandCoins, LayoutDashboard, Settings, Sparkles, Users, type LucideIcon } from 'lucide-react'
 import type { MessageKey } from '@/i18n'
 
-export type PageKey = 'overview' | 'payments' | 'recovery' | 'aiCost' | 'aiWorkspace' | 'settings'
+export type PageKey = 'overview' | 'payments' | 'recovery' | 'aiCost' | 'aiWorkspace' | 'users' | 'settings'
 
 export interface NavItem {
   page: PageKey
@@ -41,6 +41,7 @@ export const navSections: NavSection[] = [
 ]
 
 export const footerNav: NavItem[] = [
+  { page: 'users', path: '/users', labelKey: 'nav.users', icon: Users },
   { page: 'settings', path: '/settings', labelKey: 'nav.settings', icon: Settings },
 ]
 

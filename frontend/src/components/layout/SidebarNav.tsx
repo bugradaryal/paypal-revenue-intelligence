@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router'
 import { cn } from '@/lib/cn'
 import { useI18n } from '@/i18n'
+import { useAuth } from '@/features/auth/AuthProvider'
 import { footerNav, navSections, type NavItem } from './navigation'
 
 function SidebarLink({ item, onNavigate }: { item: NavItem; onNavigate?: () => void }) {
@@ -33,6 +34,8 @@ function SidebarLink({ item, onNavigate }: { item: NavItem; onNavigate?: () => v
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const { t } = useI18n()
+  const { user } = useAuth()
+  const visibleFooterNav = footerNav.filter((item) => item.page !== 'users' || user?.role === 'admin')
 
   return (
     <nav aria-label={t('nav.main')} className="flex min-h-0 flex-1 flex-col gap-6">
@@ -47,7 +50,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       ))}
       <div className="mt-auto grid gap-1 border-t border-line pt-4">
-        {footerNav.map((item) => (
+        {visibleFooterNav.map((item) => (
           <SidebarLink key={item.path} item={item} onNavigate={onNavigate} />
         ))}
       </div>

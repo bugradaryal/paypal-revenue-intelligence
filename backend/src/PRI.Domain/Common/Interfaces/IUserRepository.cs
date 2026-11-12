@@ -6,4 +6,14 @@ public interface IUserRepository
     Task<User?> GetByEmailAsync(string normalizedEmail, CancellationToken cancellationToken);
 
     Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<User>> ListAsync(CancellationToken cancellationToken);
+
+    Task<User?> GetTrackedByIdAsync(Guid id, CancellationToken cancellationToken);
+
+    Task<int> CountByRoleAsync(UserRole role, CancellationToken cancellationToken);
+
+    void Add(User user);
+
+    void Remove(User user);
 }

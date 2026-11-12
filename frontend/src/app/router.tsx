@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { Route, Routes } from 'react-router'
 import { PageFallback } from './PageFallback'
 import { RequireAuth } from '@/features/auth/RequireAuth'
+import { RequireAdmin } from '@/features/auth/RequireAdmin'
 import { AppShell } from '@/components/layout/AppShell'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 const AiCostPage = lazy(() => import('@/pages/AiCostPage').then((m) => ({ default: m.AiCostPage })))
@@ -15,6 +16,7 @@ const SettingsPage = lazy(() => import('@/pages/SettingsPage').then((m) => ({ de
 const ComponentsPage = lazy(() => import('@/pages/dev/ComponentsPage').then((m) => ({ default: m.ComponentsPage })))
 const DataPage = lazy(() => import('@/pages/dev/DataPage').then((m) => ({ default: m.DataPage })))
 const TokensPage = lazy(() => import('@/pages/dev/TokensPage').then((m) => ({ default: m.TokensPage })))
+const UsersPage = lazy(() => import('@/pages/UsersPage').then((m) => ({ default: m.UsersPage })))
 
 export function AppRoutes() {
   return (
@@ -29,6 +31,9 @@ export function AppRoutes() {
           <Route path="recovery" element={<RecoveryPage />} />
           <Route path="ai-cost" element={<AiCostPage />} />
           <Route path="ai-workspace" element={<AiWorkspacePage />} />
+          <Route element={<RequireAdmin />}>
+            <Route path="users" element={<UsersPage />} />
+          </Route>
           <Route path="settings" element={<SettingsPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>

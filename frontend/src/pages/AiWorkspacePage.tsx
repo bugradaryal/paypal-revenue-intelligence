@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { MessageSquarePlus, Sparkles } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui'
@@ -19,7 +19,8 @@ export function AiWorkspacePage() {
   const chat = useWorkspaceChat()
   const actions = useSuggestionActions(chat.syncSuggestion)
   const bottomRef = useRef<HTMLDivElement>(null)
-  const nearBottom = useRef(true)
+  const followingLatest = useRef(true)
+  const previousTurnCount = useRef(chat.turns.length)
 
   const proposed = useMemo(
     () => chat.turns.flatMap((turn) => turn.suggestions).filter((s) => s.status === 'proposed'),
@@ -37,13 +38,18 @@ export function AiWorkspacePage() {
   // Keep the newest text in view, unless the user scrolled up to read.
   useEffect(() => {
     const onScroll = () => {
-      nearBottom.current = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 160
+      followingLatest.current =
+        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 160
     }
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
-  useEffect(() => {
-    if (nearBottom.current) bottomRef.current?.scrollIntoView({ block: 'end' })
+  useLayoutEffect(() => {
+    const newUserTurn =
+      chat.turns.length > previousTurnCount.current && chat.turns.at(-2)?.role === 'user'
+    previousTurnCount.current = chat.turns.length
+    if (newUserTurn) followingLatest.current = true
+    if (followingLatest.current) bottomRef.current?.scrollIntoView({ block: 'end' })
   }, [chat.turns])
 
   const empty = chat.turns.length === 0
@@ -104,7 +110,7 @@ export function AiWorkspacePage() {
                   actions={actions}
                 />
               ))}
-              <div ref={bottomRef} />
+              <div ref={bottomRef} className="h-1 scroll-mb-32" />
             </div>
           )}
         </div>

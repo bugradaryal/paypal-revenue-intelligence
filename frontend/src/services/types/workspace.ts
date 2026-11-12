@@ -1,12 +1,7 @@
 import type { Money } from './common'
 import type { RecoverySuggestion } from './revenue'
 
-/**
- * PROPOSED. The contract fixes only the direction (docs/API_CONTRACT.md v0.3, "AI Workspace"): no server-side
- * conversation, the client sends the history on every request, the answer streams over SSE with the event types
- * meta, token, suggestion, usage, done and error. The exact schema comes in contract 0.4. Until then this
- * is served by the mock adapter and must not be sent to the backend.
- */
+/** The client keeps the conversation; the backend completion endpoint receives its history per request. */
 
 export interface ChatMessageInput {
   role: 'user' | 'assistant'

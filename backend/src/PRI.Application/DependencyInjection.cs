@@ -17,6 +17,7 @@ public static class DependencyInjection
         services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
 
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IUserManagementService, UserManagementService>();
         services.AddScoped<IPayPalSyncService, PayPalSyncService>();
         services.AddScoped<IPayPalWebhookService, PayPalWebhookService>();
 

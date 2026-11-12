@@ -328,7 +328,7 @@ export function buildRecoverySummary(range: DateRange): RecoverySummary {
 
 interface ModelProfile {
   key: string
-  provider: 'openai' | 'anthropic' | 'google'
+  provider: 'openai' | 'google'
   share: number
   /** Fictional price per 1M tokens. */
   inPerM: number
@@ -338,14 +338,11 @@ interface ModelProfile {
 const MODELS: readonly ModelProfile[] = [
   { key: 'gpt-4o-mini', provider: 'openai', share: 0.42, inPerM: 0.15, outPerM: 0.6 },
   { key: 'gpt-4o', provider: 'openai', share: 0.12, inPerM: 2.5, outPerM: 10 },
-  { key: 'claude-haiku', provider: 'anthropic', share: 0.22, inPerM: 0.8, outPerM: 4 },
-  { key: 'claude-sonnet', provider: 'anthropic', share: 0.09, inPerM: 3, outPerM: 15 },
   { key: 'gemini-flash', provider: 'google', share: 0.15, inPerM: 0.1, outPerM: 0.4 },
 ]
 
 const PROVIDER_LABEL: Record<ModelProfile['provider'], string> = {
   openai: 'OpenAI',
-  anthropic: 'Anthropic',
   google: 'Google',
 }
 

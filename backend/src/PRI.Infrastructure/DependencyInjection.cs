@@ -98,15 +98,14 @@ public static class DependencyInjection
 
         services.AddHttpClient<IAiProvider, OpenAiProvider>((serviceProvider, client) =>
         {
-            var settings = serviceProvider.GetRequiredService<IOptions<OpenAiSettings>>().Value;
-            client.BaseAddress = new Uri(string.IsNullOrWhiteSpace(settings.BaseUrl) ? OpenAiSettings.DefaultBaseUrl : settings.BaseUrl);
+            client.BaseAddress = new Uri(OpenAiSettings.DefaultBaseUrl);
             client.Timeout = TimeSpan.FromSeconds(55);   // API sözleşmesi: AI uçları için istemci timeout'u 60 sn
         });
 
         services.AddHttpClient<IEmbeddingProvider, OpenAiEmbeddingProvider>((serviceProvider, client) =>
         {
             var settings = serviceProvider.GetRequiredService<IOptions<OpenAiSettings>>().Value;
-            client.BaseAddress = new Uri(string.IsNullOrWhiteSpace(settings.BaseUrl) ? OpenAiSettings.DefaultBaseUrl : settings.BaseUrl);
+            client.BaseAddress = new Uri(OpenAiSettings.DefaultBaseUrl);
             client.Timeout = TimeSpan.FromSeconds(20);   // cache araması isteği yavaşlatmasın; zaman aşımında cache'siz devam edilir
         });
 

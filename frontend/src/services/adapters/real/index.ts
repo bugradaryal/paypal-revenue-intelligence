@@ -1,5 +1,5 @@
-import { ContractNotReadyError } from '../../errors'
 import { http } from '../../http'
+import { getCurrentLocale } from '@/i18n/current'
 import type {
   AiBudgetSetting,
   AiCostBreakdown,
@@ -27,6 +27,23 @@ import type { Api } from '../types'
 
 /** AI generation and PayPal sync/auth checks can take up to 60 seconds. */
 const LONG_REQUEST_TIMEOUT_MS = 60_000
+
+interface CompletionResponse {
+  content: string
+  model: string
+  provider: string
+  usage: {
+    inputTokens: number
+    outputTokens: number
+  }
+  cost: {
+    amount: string
+    currency: string
+  }
+  cache: {
+    status: string
+  }
+}
 
 const range = (r: DateRange) => ({ from: r.from, to: r.to })
 
@@ -56,6 +73,61 @@ interface ProviderCacheStatsResponse {
 
 interface ProviderClearCacheResponse {
   deletedCount: number
+}
+
+const PAYMENT_INTENT = /\b(payment|payments|transaction|transactions|charge|charges|zahlung|zahlungen|transaktion|transaktionen|pago|pagos)\b|ödem|işlem/i
+const PAYMENT_QUERY_STOP_WORDS = new Set([
+  'a', 'about', 'an', 'and', 'at', 'can', 'could', 'do', 'does', 'failed', 'for', 'give', 'how', 'i',
+  'is', 'me', 'my', 'of', 'on', 'or', 'payment', 'payments', 'please', 'recommend', 'recommendation',
+  'should', 'suggest', 'suggestion', 'the', 'this', 'to', 'transaction', 'transactions', 'what', 'with',
+  'you', 'your', 'zahlung', 'zahlungen', 'transaktion', 'transaktionen', 'pago', 'pagos', 'por', 'para',
+  'una', 'un', 'que', 'como', 'meine', 'bitte', 'für', 'von', 'und', 'mit', 'ist', 'was', 'kann',
+  'soll', 'mir', 'analysiere', 'analiz', 'ödemesi', 'ödemeye', 'ödemesine', 'ödeme', 'işlem', 'işlemi',
+  'için', 'bana', 'öneri', 'öneride', 'bulun', 'hakkında', 'bak', 'şu', 'bu',
+])
+
+function paymentSearchTerms(question: string): string[] {
+  const paymentId = question.match(/\b[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\b/i)?.[0]
+  if (paymentId) return [paymentId]
+
+  return [...new Set(
+    question
+      .match(/[\p{L}\p{N}@._-]+/gu)
+      ?.filter((word) => word.length >= 3 && !PAYMENT_QUERY_STOP_WORDS.has(word.toLocaleLowerCase())) ?? [],
+  )]
+    .sort((left, right) => right.length - left.length)
+    .slice(0, 3)
+}
+
+async function findPaymentContext(question: string, signal?: AbortSignal): Promise<string> {
+  if (!PAYMENT_INTENT.test(question)) return ''
+
+  const terms = paymentSearchTerms(question)
+  const results = await Promise.all(
+    terms.map((search) =>
+      http.get<Page<Payment>>('revenue/payments', {
+        query: { page: 1, pageSize: 5, search, sortBy: 'createdAt', sortDir: 'desc' },
+        signal,
+      }),
+    ),
+  )
+  const payments = [...new Map(results.flatMap((page) => page.items).map((payment) => [payment.id, payment])).values()]
+
+  if (payments.length === 0) {
+    return 'No matching payment record was found for the user’s reference. Do not claim to have inspected a payment or invent its details; ask for the customer name, payment ID, or transaction ID.'
+  }
+
+  return `Matching payment records from the user's account:\n${JSON.stringify(
+    payments.map(({ id, customerName, amount, status, failureCode, createdAt, dataSource }) => ({
+      id,
+      customerName,
+      amount,
+      status,
+      failureCode,
+      createdAt,
+      dataSource,
+    })),
+  )}\nUse only these records for payment-specific claims. If multiple records could match, ask the user which one they mean.`
 }
 
 function toModelInfo(model: ProviderModelResponse): AiModelInfo {
@@ -173,11 +245,48 @@ export const realApi: Api = {
   },
 
   workspace: {
-    // The streaming schema is not defined until contract 0.4, so there is nothing to call yet.
-    // adapters/index.ts keeps this operation on the mock until then.
-    // eslint-disable-next-line require-yield
-    async *streamChat() {
-      throw new ContractNotReadyError('workspace.streamChat')
+    async *streamChat(request, options) {
+      const language = {
+        en: 'English',
+        de: 'German',
+        tr: 'Turkish',
+        es: 'Spanish',
+      }[getCurrentLocale()]
+      const latestQuestion = [...request.messages].reverse().find((message) => message.role === 'user')?.content ?? ''
+      const paymentContext = await findPaymentContext(latestQuestion, options?.signal)
+      const response = await http.post<CompletionResponse>('gateway/completions', {
+        body: {
+          model: 'auto',
+          taskType: 'default',
+          messages: [
+            {
+              role: 'system',
+              content: [
+                `You are a helpful PayPal Revenue Intelligence assistant. Reply in ${language}.`,
+                paymentContext,
+              ].filter(Boolean).join('\n\n'),
+            },
+            ...request.messages,
+          ],
+          cache: true,
+          optimizePrompt: true,
+        },
+        signal: options?.signal,
+        timeoutMs: LONG_REQUEST_TIMEOUT_MS,
+      })
+
+      yield { type: 'meta', model: response.model, provider: response.provider }
+      if (response.content) yield { type: 'token', text: response.content }
+      yield {
+        type: 'usage',
+        model: response.model,
+        provider: response.provider,
+        inputTokens: response.usage.inputTokens,
+        outputTokens: response.usage.outputTokens,
+        cost: response.cost,
+        cacheHit: response.cache.status === 'hit',
+      }
+      yield { type: 'done' }
     },
   },
 }

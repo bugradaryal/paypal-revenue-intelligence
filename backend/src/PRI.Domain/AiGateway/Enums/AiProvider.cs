@@ -1,10 +1,11 @@
 namespace PRI.Domain.AiGateway.Enums;
 
 /// <summary>
-/// Desteklenen AI sağlayıcıları. MVP'de yalnızca OpenAI vardır; yeni sağlayıcı = yeni üye + yeni IAiProvider adaptörü.
-/// JSON'da "openai" olarak görünür.
+/// AI sağlayıcı kayıtları. Anthropic enum değeri yalnızca eski veritabanı kayıtlarını okuyup devre dışı bırakabilmek
+/// için tutulur; bu uygulama sürümünde yalnızca OpenAI sağlayıcısı desteklenir.
 /// </summary>
 public enum AiProvider
 {
-    Openai = 1
+    Openai = 1,
+    Anthropic = 2
 }

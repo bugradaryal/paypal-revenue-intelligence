@@ -11,6 +11,7 @@ public sealed class WebhooksController(IPayPalWebhookService webhookService) : A
 {
     /// <summary>PayPal webhook'u. JWT istemez; kimlik, PayPal imzasının doğrulanmasıyla sağlanır.</summary>
     [HttpPost("paypal")]
+    [HttpPost("/")]
     [AllowAnonymous]
     [RequestSizeLimit(1_000_000)]
     public async Task<IActionResult> PayPal(CancellationToken cancellationToken)

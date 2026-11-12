@@ -6,14 +6,14 @@ using PRI.Infrastructure.Persistence.Context;
 namespace PRI.Infrastructure.AiGateway.Seed;
 
 /// <summary>
-/// İlk first-party client'ı, OpenAI model kataloğunu, baz modeli ve varsayılan yönlendirme kurallarını ekler
+/// İlk first-party client'ı, model kataloglarını, baz modeli ve varsayılan yönlendirme kurallarını ekler
 /// (yalnızca eksik olanları; mevcut kayıtlara dokunmaz).
-/// Fiyatlar OpenAI'ın resmi fiyat sayfasından (Standard işleme, kısa bağlam) alınmıştır; kaynak ve kontrol tarihi kayıtla saklanır.
+/// Fiyatlar resmi sağlayıcı fiyat sayfalarından alınmıştır; kaynak ve kontrol tarihi kayıtla saklanır.
 /// Fiyat değişirse yeni kayıt/migration ile güncellenir, uydurma veya tahmini fiyat kullanılmaz.
 /// </summary>
 public sealed class GatewaySeeder(AppDbContext db, TimeProvider timeProvider)
 {
-    private const string PricingUrl = "https://developers.openai.com/api/docs/pricing";
+    private const string OpenAiPricingUrl = "https://developers.openai.com/api/docs/pricing";
     private static readonly DateOnly PricingCheckedOn = new(2026, 11, 7);
 
     private const string Luna = "gpt-6-luna";
@@ -46,6 +46,15 @@ public sealed class GatewaySeeder(AppDbContext db, TimeProvider timeProvider)
     {
         var now = timeProvider.GetUtcNow().UtcDateTime;
 
+        var unsupportedModels = await db.ProviderModels
+            .Where(m => m.Provider != AiProvider.Openai && (m.IsEnabled || m.IsBaseline))
+            .ToListAsync(cancellationToken);
+        foreach (var model in unsupportedModels)
+        {
+            model.SetEnabled(false);
+            model.SetBaseline(false);
+        }
+
         if (!await db.GatewayClients.AnyAsync(c => c.IsFirstParty, cancellationToken))
         {
             db.GatewayClients.Add(GatewayClient.CreateFirstParty("PRI Dashboard", now));
@@ -60,7 +69,7 @@ public sealed class GatewaySeeder(AppDbContext db, TimeProvider timeProvider)
         {
             db.ProviderModels.Add(ProviderModel.Create(
                 AiProvider.Openai, seed.ModelId, seed.Name, seed.Tier,
-                seed.Input, seed.Cached, seed.Output, PricingUrl, PricingCheckedOn, now));
+                seed.Input, seed.Cached, seed.Output, OpenAiPricingUrl, PricingCheckedOn, now));
         }
 
         await db.SaveChangesAsync(cancellationToken);
