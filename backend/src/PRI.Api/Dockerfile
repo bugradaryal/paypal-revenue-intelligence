@@ -13,8 +13,8 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 
 COPY --from=build /app/publish .
-RUN mkdir -p /var/lib/recoup \
-    && chown -R "$APP_UID:0" /var/lib/recoup
+RUN mkdir -p /var/lib/PRI \
+    && chown -R "$APP_UID:0" /var/lib/PRI
 
 ENV ASPNETCORE_HTTP_PORTS=10000
 EXPOSE 10000

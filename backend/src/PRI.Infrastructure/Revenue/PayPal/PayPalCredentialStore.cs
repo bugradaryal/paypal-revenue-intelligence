@@ -88,7 +88,7 @@ public sealed class PayPalCredentialStore
                 "Set PayPal:CredentialStorePath because the current user's local application data directory is unavailable.");
         }
 
-        return Path.Combine(localAppData, "Recoup", "paypal-credentials.dat");
+        return Path.Combine(localAppData, "PRI", "paypal-credentials.dat");
     }
 
     private sealed record StoredCredentials(string ClientId, string ClientSecret, string? WebhookId = null);
