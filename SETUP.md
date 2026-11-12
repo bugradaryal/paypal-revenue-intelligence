@@ -1,4 +1,4 @@
-# Recoup — Local Setup Guide
+# PRI — Local Setup Guide
 
 This guide describes how to run the repository in a local development environment, use the fictional-data presentation mode, and optionally connect the backend to PayPal Sandbox and an AI provider.
 
@@ -86,7 +86,7 @@ API_PORT=5000
 JWT_KEY=REPLACE_WITH_AT_LEAST_32_RANDOM_CHARACTERS
 SEED_ADMIN_EMAIL=admin@pri.local
 SEED_ADMIN_PASSWORD=REPLACE_WITH_A_LONG_RANDOM_ADMIN_PASSWORD
-SEED_ADMIN_DISPLAY_NAME=Recoup Administrator
+SEED_ADMIN_DISPLAY_NAME=PRI Administrator
 ```
 
 Generate strong secrets locally. For example, on systems with OpenSSL:
@@ -160,7 +160,7 @@ ASP.NET Core configuration supports environment-variable overrides using double 
 | `JWT_KEY` | **Required by Compose** | JWT signing key injected as `Jwt:Key`; backend requires at least 32 characters. | `generate-a-long-random-value` |
 | `SEED_ADMIN_EMAIL` | Optional | Initial administrator email. Defaults to `admin@pri.local`. | `admin@example.test` |
 | `SEED_ADMIN_PASSWORD` | **Required by Compose** | Initial administrator password. | `use-a-unique-secret` |
-| `SEED_ADMIN_DISPLAY_NAME` | Optional | Initial administrator display name. Defaults to `Admin`. | `Recoup Administrator` |
+| `SEED_ADMIN_DISPLAY_NAME` | Optional | Initial administrator display name. Defaults to `Admin`. | `PRI Administrator` |
 
 ### Backend application configuration
 
@@ -193,11 +193,11 @@ ASP.NET Core configuration supports environment-variable overrides using double 
 | `Gateway:Cache:TtlHours` | `Gateway__Cache__TtlHours` | Optional | Cache entry lifetime. Default: `24`. |
 | `Gateway:Cache:MaxCandidates` | `Gateway__Cache__MaxCandidates` | Optional | Maximum cache candidates considered. Default: `500`. |
 | `Gateway:Cache:MaxQueryCharacters` | `Gateway__Cache__MaxQueryCharacters` | Optional | Maximum query characters considered for semantic caching. Default: `8000`. |
-| `DataProtection:KeyRingPath` | `DataProtection__KeyRingPath` | Recommended for persistent deployments | Directory used to persist ASP.NET Core Data Protection keys. Compose sets `/var/lib/recoup/dp-keys`. |
+| `DataProtection:KeyRingPath` | `DataProtection__KeyRingPath` | Recommended for persistent deployments | Directory used to persist ASP.NET Core Data Protection keys. Compose sets `/var/lib/PRI/dp-keys`. |
 | `ASPNETCORE_ENVIRONMENT` | `ASPNETCORE_ENVIRONMENT` | Optional | ASP.NET Core environment. Compose sets `Development`. |
 | `PORT` | `PORT` | Optional in container | Port consumed by the Dockerfile startup command; defaults to `10000`. Compose publishes container port 10000. |
 
-The Compose file mounts `pri_api_data` at `/var/lib/recoup`, which persists the encrypted PayPal credential file and Data Protection key ring across container restarts. Keep this volume private and back it up securely.
+The Compose file mounts `pri_api_data` at `/var/lib/PRI`, which persists the encrypted PayPal credential file and Data Protection key ring across container restarts. Keep this volume private and back it up securely.
 
 ## 6. Backend restore and run without Docker
 
@@ -217,7 +217,7 @@ $env:Jwt__Key = "REPLACE_WITH_AT_LEAST_32_RANDOM_CHARACTERS"
 $env:Database__InitializeOnStartup = "true"
 $env:Seed__AdminEmail = "admin@example.test"
 $env:Seed__AdminPassword = "REPLACE_WITH_A_LONG_RANDOM_PASSWORD"
-$env:Seed__AdminDisplayName = "Recoup Administrator"
+$env:Seed__AdminDisplayName = "PRI Administrator"
 $env:Cors__AllowedOrigins__0 = "http://localhost:5173"
 ```
 
@@ -229,7 +229,7 @@ export Jwt__Key='REPLACE_WITH_AT_LEAST_32_RANDOM_CHARACTERS'
 export Database__InitializeOnStartup=true
 export Seed__AdminEmail='admin@example.test'
 export Seed__AdminPassword='REPLACE_WITH_A_LONG_RANDOM_PASSWORD'
-export Seed__AdminDisplayName='Recoup Administrator'
+export Seed__AdminDisplayName='PRI Administrator'
 export Cors__AllowedOrigins__0='http://localhost:5173'
 ```
 
@@ -292,7 +292,7 @@ PayPal integration is optional. The backend uses the Sandbox base URL only; do n
 3. Create a Sandbox REST app (or use an existing app).
 4. Copy its Sandbox Client ID and Secret into a secure password manager or local secret store.
 5. Confirm the Sandbox app has the API permissions needed for transaction search and, if using invoice features, PayPal Invoicing access.
-6. Sign in to Recoup with an administrator account.
+6. Sign in to PRI with an administrator account.
 7. Open **Settings → PayPal connection** (the precise labels may vary with the UI language).
 8. Save the Sandbox Client ID and Secret. The backend encrypts the saved credential payload using ASP.NET Core Data Protection.
 9. Use **Test connection** to verify OAuth/API authentication.
@@ -320,7 +320,7 @@ Webhook support is optional; manual sync works without it.
 5. Save the webhook ID with the PayPal connection credentials in Settings, or configure `PayPal__WebhookId` on the backend.
 6. Deliver a Sandbox test event and inspect backend logs and stored payment state.
 
-The webhook handler verifies PayPal signature headers and rejects missing/invalid signatures. It deduplicates event IDs. A webhook updates only a payment already imported into Recoup; it does not create unknown payment records. Run a subsequent sync to reconcile records and invoice state.
+The webhook handler verifies PayPal signature headers and rejects missing/invalid signatures. It deduplicates event IDs. A webhook updates only a payment already imported into PRI; it does not create unknown payment records. Run a subsequent sync to reconcile records and invoice state.
 
 ## 8. Configure OpenAI (optional)
 
@@ -492,7 +492,7 @@ The included Compose file is a local development stack. Before any public or pro
 - Set `ASPNETCORE_ENVIRONMENT=Production` and configure `Database:InitializeOnStartup` deliberately. The supplied Compose configuration uses Development and startup initialization for local convenience.
 - Configure the exact frontend origin in `Cors:AllowedOrigins`; do not use wildcard origins with credentialed access.
 - Terminate TLS at a trusted ingress/reverse proxy and expose only required ports.
-- Persist and protect PostgreSQL data, `/var/lib/recoup` (encrypted PayPal credential file and Data Protection key ring), and backup encryption keys. Losing the Data Protection key ring can make saved PayPal credentials unreadable.
+- Persist and protect PostgreSQL data, `/var/lib/PRI` (encrypted PayPal credential file and Data Protection key ring), and backup encryption keys. Losing the Data Protection key ring can make saved PayPal credentials unreadable.
 - Use a managed PostgreSQL instance with pgvector support, backups, restore tests, connection limits, and monitoring.
 - Keep secrets in the deployment platform's secret manager or environment configuration, not in images or repository files.
 - Restrict administrator access and review account activation/deactivation procedures.
