@@ -140,7 +140,7 @@ For payment-specific questions, the real adapter retrieves matching payment reco
 
 ## How Recoup works
 
-![Mermaid Diagram](./docs/images/diagram.png)
+![Mermaid Diagram](./docs/images/mdiagram.png)
 
 A typical journey is:
 
