@@ -12,9 +12,9 @@ export const buttonStyles = cva(
   {
     variants: {
       variant: {
-        primary: 'bg-brand-gradient text-ink-on-brand shadow-brand hover:brightness-105',
-        secondary: 'border border-line-strong bg-surface-card text-ink shadow-xs hover:bg-surface-muted',
-        soft: 'bg-brand-soft text-brand-text hover:bg-brand-soft-strong',
+        primary: 'bg-brand-gradient text-ink-on-brand shadow-brand hover:-translate-y-0.5 hover:brightness-105 hover:shadow-lg',
+        secondary: 'border border-line-strong bg-surface-card text-ink shadow-xs hover:-translate-y-px hover:border-brand-300 hover:bg-surface-muted hover:shadow-sm',
+        soft: 'bg-brand-soft text-brand-text hover:-translate-y-px hover:bg-brand-soft-strong',
         ghost: 'text-ink-soft hover:bg-surface-muted hover:text-ink',
         danger: 'bg-danger text-white shadow-xs hover:brightness-110',
       },

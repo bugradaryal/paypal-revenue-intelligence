@@ -15,15 +15,17 @@ function SidebarLink({ item, onNavigate }: { item: NavItem; onNavigate?: () => v
       onClick={onNavigate}
       className={({ isActive }) =>
         cn(
-          'focus-ring group flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors duration-150',
-          isActive ? 'bg-brand-soft text-brand-text' : 'text-ink-soft hover:bg-surface-muted hover:text-ink',
+          'focus-ring group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-[background-color,color,transform,box-shadow] duration-200',
+          isActive
+            ? 'bg-brand-soft text-brand-text shadow-xs ring-1 ring-brand-500/15'
+            : 'text-ink-soft hover:translate-x-0.5 hover:bg-surface-muted hover:text-ink',
         )
       }
     >
       {({ isActive }) => (
         <>
           <Icon
-            className={cn('size-[1.15rem] shrink-0 transition-colors', isActive ? 'text-brand-500' : 'text-ink-faint group-hover:text-ink-soft')}
+            className={cn('size-[1.15rem] shrink-0 transition-colors', isActive ? 'text-brand-600 dark:text-brand-300' : 'text-ink-faint group-hover:text-ink-soft')}
           />
           <span className="truncate">{t(item.labelKey)}</span>
         </>

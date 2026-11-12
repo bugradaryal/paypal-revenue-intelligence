@@ -76,21 +76,24 @@ export function AiWorkspacePage() {
           )}
 
           {empty ? (
-            <section className="grid place-items-center gap-6 py-10 text-center">
-              <span className="grid size-14 place-items-center rounded-2xl bg-brand-500 text-ink-on-brand shadow-md">
+            <section className="relative isolate grid place-items-center gap-6 overflow-hidden rounded-3xl border border-line/80 bg-surface-card/65 px-5 py-12 text-center shadow-sm sm:px-8">
+              <span aria-hidden="true" className="pointer-events-none absolute -right-10 -top-16 size-64 rounded-full bg-brand-500/10 blur-3xl" />
+              <span aria-hidden="true" className="pointer-events-none absolute -bottom-28 -left-10 size-64 rounded-full bg-brand-500/5 blur-3xl" />
+              <span className="relative grid size-[4.5rem] place-items-center rounded-2xl bg-brand-gradient text-ink-on-brand shadow-brand">
+                <span aria-hidden="true" className="absolute -inset-2 rounded-[1.35rem] border border-brand-400/35 motion-safe:animate-orbit" />
                 <Sparkles className="size-7" />
               </span>
               <div className="grid max-w-md gap-2">
                 <h2 className="text-xl font-bold tracking-tight">{t('workspace.empty.title')}</h2>
                 <p className="text-sm text-ink-soft">{t('workspace.empty.description')}</p>
               </div>
-              <ul className="grid w-full max-w-2xl gap-3 sm:grid-cols-2">
+              <ul className="relative grid w-full max-w-2xl gap-3 sm:grid-cols-2">
                 {STARTERS.map((key) => (
                   <li key={key}>
                     <button
                       type="button"
                       onClick={() => chat.send(t(`workspace.starters.${key}`))}
-                      className="focus-ring h-full w-full rounded-xl border border-line bg-surface-card p-4 text-left text-sm font-medium transition-colors hover:border-brand-400 hover:bg-brand-soft"
+                      className="focus-ring h-full w-full rounded-2xl border border-line bg-surface-card p-4 text-left text-sm font-semibold shadow-xs transition-[transform,box-shadow,border-color,background-color] duration-200 hover:-translate-y-0.5 hover:border-brand-400 hover:bg-brand-soft hover:shadow-sm"
                     >
                       {t(`workspace.starters.${key}`)}
                     </button>

@@ -2,7 +2,7 @@ import type { HTMLAttributes, ReactNode } from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/cn'
 
-const cardStyles = cva('rounded-xl border border-line', {
+const cardStyles = cva('rounded-2xl border border-line/90 motion-safe:animate-rise-in', {
   variants: {
     variant: {
       default: 'bg-surface-card shadow-sm',
@@ -12,7 +12,7 @@ const cardStyles = cva('rounded-xl border border-line', {
     },
     padding: { none: '', sm: 'p-4', md: 'p-6' },
     interactive: {
-      true: 'cursor-pointer transition-[box-shadow,transform,border-color] duration-200 hover:-translate-y-0.5 hover:border-line-strong hover:shadow-md',
+      true: 'cursor-pointer transition-[box-shadow,transform,border-color] duration-300 ease-[var(--ease-out-soft)] hover:-translate-y-1 hover:border-brand-300 hover:shadow-md',
       false: '',
     },
   },
@@ -36,7 +36,10 @@ export function CardHeader({ title, description, action, className }: CardHeader
   return (
     <div className={cn('mb-5 flex flex-wrap items-start justify-between gap-x-4 gap-y-3', className)}>
       <div className="grid min-w-0 gap-1">
-        <h3 className="text-sm font-semibold tracking-tight text-ink">{title}</h3>
+        <h3 className="flex items-center gap-2 text-sm font-bold tracking-tight text-ink">
+          <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-brand-500 shadow-brand" />
+          {title}
+        </h3>
         {description && <p className="text-xs text-ink-soft">{description}</p>}
       </div>
       {action}

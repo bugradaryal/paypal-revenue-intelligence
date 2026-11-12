@@ -8,12 +8,13 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, description, actions }: PageHeaderProps) {
   return (
-    <div className="mb-8 flex flex-wrap items-end justify-between gap-4 animate-fade-in">
-      <div className="grid max-w-2xl gap-1.5">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
-        {description && <p className="text-ink-soft">{description}</p>}
+    <div className="mb-9 flex flex-wrap items-end justify-between gap-5 animate-fade-in">
+      <div className="grid max-w-2xl gap-2">
+        <span aria-hidden="true" className="h-1 w-10 rounded-full bg-brand-gradient shadow-brand" />
+        <h1 className="text-3xl font-extrabold tracking-[-0.045em] sm:text-4xl">{title}</h1>
+        {description && <p className="max-w-2xl text-sm leading-6 text-ink-soft sm:text-base">{description}</p>}
       </div>
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
+      {actions && <div className="flex items-center gap-2 rounded-2xl border border-line/80 bg-surface-card/75 p-1.5 shadow-xs backdrop-blur-sm">{actions}</div>}
     </div>
   )
 }

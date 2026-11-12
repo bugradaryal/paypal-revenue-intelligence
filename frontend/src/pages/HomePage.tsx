@@ -103,8 +103,11 @@ export function HomePage() {
 
       <main id="top">
         <section className="relative isolate overflow-hidden bg-[#10141b] text-white">
+          <div aria-hidden="true" className="hero-grid pointer-events-none absolute inset-0 opacity-80" />
           <div className="pointer-events-none absolute -left-40 top-8 size-[30rem] rounded-full bg-brand-500/20 blur-[120px]" />
           <div className="pointer-events-none absolute -right-32 bottom-0 size-[28rem] rounded-full bg-sky-500/10 blur-[120px]" />
+          <div aria-hidden="true" className="pointer-events-none absolute right-[12%] top-20 hidden size-64 rounded-full border border-brand-200/10 motion-safe:animate-float lg:block" />
+          <div aria-hidden="true" className="pointer-events-none absolute right-[14%] top-28 hidden size-52 rounded-full border border-dashed border-white/10 motion-safe:animate-orbit lg:block" />
           <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[0.92fr_1.08fr] lg:gap-10 lg:px-12 lg:py-28">
             <div className="animate-rise-in">
               <div className="mb-7 inline-flex items-center gap-3 rounded-full border border-brand-300/30 bg-brand-400/10 px-5 py-3 text-sm font-bold tracking-wide text-brand-100 sm:text-base">
@@ -145,7 +148,7 @@ export function HomePage() {
               </div>
             </div>
 
-            <div className="relative mx-auto w-full max-w-[42rem] animate-rise-in [animation-delay:120ms]">
+            <div className="relative mx-auto w-full max-w-[42rem] animate-rise-in [animation-delay:120ms] lg:rotate-[0.8deg] lg:transition-transform lg:duration-700 lg:hover:rotate-0">
               <div className="absolute -inset-8 rounded-[3rem] bg-gradient-to-br from-brand-500/20 via-transparent to-sky-400/15 blur-2xl" />
               <div className="relative overflow-hidden rounded-[1.75rem] border border-white/15 bg-[#f7f8fa] p-3 text-slate-900 shadow-2xl shadow-black/30 sm:rounded-[2rem] sm:p-5">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-2 pb-4">
@@ -245,7 +248,7 @@ export function HomePage() {
               {features.map(({ icon: Icon, title, description, tone }, index) => (
                 <article
                   key={title}
-                  className="group rounded-3xl border border-line bg-surface-app p-6 transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-lg sm:p-8"
+                  className="group rounded-3xl border border-line bg-surface-app p-6 transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-lg motion-safe:animate-rise-in sm:p-8"
                   style={{ animationDelay: `${index * 90}ms` }}
                 >
                   <span className={`grid size-14 place-items-center rounded-2xl ${tone} transition-transform duration-300 group-hover:scale-105`}>
@@ -293,8 +296,12 @@ export function HomePage() {
                 { icon: CreditCard, number: '01', title: t('landing.stepOneTitle'), description: t('landing.stepOneDescription') },
                 { icon: Waypoints, number: '02', title: t('landing.stepTwoTitle'), description: t('landing.stepTwoDescription') },
                 { icon: ShieldCheck, number: '03', title: t('landing.stepThreeTitle'), description: t('landing.stepThreeDescription') },
-              ].map(({ icon: Icon, number, title, description }) => (
-                <article key={number} className="relative overflow-hidden rounded-3xl border border-line bg-surface-card p-6 shadow-xs sm:p-8">
+              ].map(({ icon: Icon, number, title, description }, index) => (
+                <article
+                  key={number}
+                  className="relative overflow-hidden rounded-3xl border border-line bg-surface-card p-6 shadow-xs transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-md motion-safe:animate-rise-in sm:p-8"
+                  style={{ animationDelay: `${index * 90}ms` }}
+                >
                   <div className="flex items-center justify-between">
                     <span className="grid size-12 place-items-center rounded-2xl bg-brand-soft text-brand-text">
                       <Icon aria-hidden="true" size={22} />
@@ -324,7 +331,10 @@ export function HomePage() {
             </div>
             <div className="grid gap-4">
               {principles.map(({ icon: Icon, title, description }) => (
-                <article key={title} className="flex gap-4 rounded-2xl border border-line bg-surface-app p-5 sm:p-6">
+                <article
+                  key={title}
+                  className="flex gap-4 rounded-2xl border border-line bg-surface-app p-5 transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-sm sm:p-6"
+                >
                   <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-surface-card text-brand-text shadow-xs">
                     <Icon aria-hidden="true" size={22} />
                   </span>
@@ -339,6 +349,7 @@ export function HomePage() {
         </section>
 
         <section className="relative isolate overflow-hidden bg-[#10141b] text-white">
+          <div aria-hidden="true" className="hero-grid pointer-events-none absolute inset-0 opacity-80" />
           <div className="pointer-events-none absolute -right-24 -top-32 size-96 rounded-full bg-brand-500/20 blur-[100px]" />
           <div className="relative mx-auto flex max-w-7xl flex-col items-start justify-between gap-8 px-5 py-16 sm:px-8 sm:py-20 md:flex-row md:items-center lg:px-12">
             <div>

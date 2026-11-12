@@ -16,7 +16,7 @@ export function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
   const roleLabel = required && user ? tryT(`auth.role.${user.role}`, user.role) : t('topbar.fallbackRole')
 
   return (
-    <header className="sticky top-0 z-20 border-b border-line bg-surface-app/80 backdrop-blur">
+    <header className="sticky top-0 z-20 border-b border-line/80 bg-surface-app/80 shadow-xs backdrop-blur-xl">
       <div className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-8">
         <IconButton aria-label={t('topbar.openMenu')} className="lg:hidden" onClick={onOpenMenu}>
           <Menu />
@@ -31,7 +31,8 @@ export function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
                 <span className="text-ink-faint">/</span>
               </>
             )}
-            <span className="font-semibold">{t(current.labelKey)}</span>
+            <span aria-hidden="true" className="size-2 rounded-full bg-brand-500 shadow-brand" />
+            <span className="font-bold tracking-tight">{t(current.labelKey)}</span>
           </p>
         )}
 

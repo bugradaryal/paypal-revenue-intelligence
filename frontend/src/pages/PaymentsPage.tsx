@@ -133,7 +133,7 @@ export function PaymentsPage() {
   const [params, setParams] = useSearchParams()
 
   const search = params.get('q') ?? ''
-  const statuses = params.getAll('status').filter(isStatus)
+  const statuses = params.getAll('status').filter(isStatus).slice(0, 1)
   const rangeKey: RangeKey = isRange(params.get('range')) ? (params.get('range') as RangeKey) : 'd30'
   const sort: SortState = {
     by: params.get('sort') === 'amount' ? 'amount' : 'createdAt',
@@ -246,6 +246,7 @@ export function PaymentsPage() {
           <ChipFilter
             label={t('payments.statusLabel')}
             value={statuses}
+            selectionMode="single"
             onChange={(value) =>
               update((next) => {
                 next.delete('status')

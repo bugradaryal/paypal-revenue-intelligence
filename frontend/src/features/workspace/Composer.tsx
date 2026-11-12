@@ -65,7 +65,7 @@ export function Composer({
           className="h-8 min-w-32 text-xs"
         />
       </div>
-      <form onSubmit={submit} className="rounded-2xl border border-line bg-surface-card p-2 shadow-md focus-within:border-brand-400">
+      <form onSubmit={submit} className="rounded-2xl border border-line-strong/80 bg-surface-card/95 p-2.5 shadow-lg backdrop-blur-xl transition-[border-color,box-shadow] duration-200 focus-within:border-brand-400 focus-within:shadow-brand">
         <label htmlFor="workspace-input" className="sr-only">
           {t('workspace.inputLabel')}
         </label>

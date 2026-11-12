@@ -34,7 +34,7 @@ export function AppShell() {
   }, [pageTitle, productName])
 
   return (
-    <div className="min-h-dvh bg-surface-app">
+    <div className="app-ambient min-h-dvh bg-surface-app">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-md focus:bg-surface-card focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:shadow-lg"
@@ -42,14 +42,14 @@ export function AppShell() {
         {t('common.skipToContent')}
       </a>
 
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col gap-8 border-r border-line bg-surface-card px-4 py-5 lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col gap-8 border-r border-line/80 bg-surface-card/90 px-4 py-5 shadow-sm backdrop-blur-xl before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-brand-gradient lg:flex">
         <Logo className="px-2" />
         <SidebarNav />
       </aside>
 
       <div className="lg:pl-64">
         <Topbar onOpenMenu={() => setMenuOpen(true)} />
-        <main id="main" tabIndex={-1} className="mx-auto max-w-7xl px-4 py-8 outline-none sm:px-6 lg:px-8">
+        <main id="main" tabIndex={-1} className="mx-auto max-w-7xl px-4 py-8 outline-none sm:px-6 sm:py-9 lg:px-8 lg:py-10">
           <ErrorBoundary key={pathname}>
             <Suspense fallback={<PageFallback />}>
               <Outlet />

@@ -104,19 +104,29 @@ export function SegmentedControl<T extends string>({
   )
 }
 
-/** Multiple choice as toggle chips, e.g. payment status. An empty selection means "all". */
+/** Toggle chips for multiple choices or a single selected value. An empty selection means "all". */
 export function ChipFilter<T extends string>({
   options,
   value,
   onChange,
   label,
+  selectionMode = 'multiple',
 }: {
   options: Option<T>[]
   value: T[]
   onChange: (value: T[]) => void
   label: string
+  selectionMode?: 'single' | 'multiple'
 }) {
-  const toggle = (item: T) => onChange(value.includes(item) ? value.filter((v) => v !== item) : [...value, item])
+  const toggle = (item: T) => {
+    if (selectionMode === 'single') {
+      onChange(value[0] === item ? value : [item])
+      return
+    }
+
+    onChange(value.includes(item) ? value.filter((v) => v !== item) : [...value, item])
+  }
+
   return (
     <div role="group" aria-label={label} className="flex flex-wrap gap-1.5">
       {options.map((option) => {
@@ -131,7 +141,9 @@ export function ChipFilter<T extends string>({
               'focus-ring rounded-full border px-3 py-1 text-xs font-medium transition-colors',
               pressed
                 ? 'border-brand-400 bg-brand-soft text-brand-text'
-                : 'border-line bg-surface-card text-ink-soft hover:border-line-strong hover:text-ink',
+                : selectionMode === 'single' && value.length
+                  ? 'border-line bg-surface-muted text-ink-faint hover:border-brand-300 hover:bg-brand-soft hover:text-brand-text'
+                  : 'border-line bg-surface-card text-ink-soft hover:border-line-strong hover:text-ink',
             )}
           >
             {option.label}
