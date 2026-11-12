@@ -1,12 +1,12 @@
-# Recoup — PayPal Revenue Intelligence
+# PRI — PayPal Revenue Intelligence
 
 **See where revenue is exposed. Understand what AI costs. Decide what to do next.**
 
-![Recoup Landing Page](./docs/images/home.png)
+![PRI Landing Page](./docs/images/home.png)
 
-Recoup is a revenue-operations and AI-cost intelligence workspace built around PayPal payment data. It brings payment outcomes, invoice balances, recovery work, revenue analysis, and AI workload economics into one operational view.
+PRI is a revenue-operations and AI-cost intelligence workspace built around PayPal payment data. It brings payment outcomes, invoice balances, recovery work, revenue analysis, and AI workload economics into one operational view.
 
-Rather than treating payment reporting and AI spend as unrelated dashboards, Recoup puts them side by side: finance and operations teams can investigate revenue exposure while product and engineering teams understand the cost of the AI systems they run. The product emphasizes traceable source data, transparent calculations, and human approval before customer-facing recovery actions.
+Rather than treating payment reporting and AI spend as unrelated dashboards, PRI puts them side by side: finance and operations teams can investigate revenue exposure while product and engineering teams understand the cost of the AI systems they run. The product emphasizes traceable source data, transparent calculations, and human approval before customer-facing recovery actions.
 
 > **Project status:** Hackathon-stage implementation. PayPal connectivity is Sandbox-only. The frontend includes a fictional-data demo adapter, while the backend provides the implemented API, persistence, PayPal Sandbox integration, and AI gateway. Read [Current limitations](#current-limitations) before interpreting demo or provider-derived figures.
 
@@ -14,7 +14,7 @@ Rather than treating payment reporting and AI spend as unrelated dashboards, Rec
 
 A business can see that a payment failed. What it often cannot see in one place is the full picture: whether the customer still has an open invoice, how much cash is outstanding, whether the same failure is recurring, what follow-up is appropriate, and what its AI tooling is costing at the same time.
 
-**Recoup turns that fragmented picture into a reviewable operational workflow.** It connects PayPal payment and invoice records with revenue analytics, recovery work, cash-flow visibility, and AI usage economics. Instead of presenting another transaction list, it helps a team move from a signal to an evidence-backed decision:
+**PRI turns that fragmented picture into a reviewable operational workflow.** It connects PayPal payment and invoice records with revenue analytics, recovery work, cash-flow visibility, and AI usage economics. Instead of presenting another transaction list, it helps a team move from a signal to an evidence-backed decision:
 
 - **See the exposure:** distinguish completed, failed, pending, and refunded payments from outstanding invoice balances.
 - **Understand the cause:** inspect transaction history, failure patterns, customer cohorts, and overdue aging.
@@ -22,7 +22,7 @@ A business can see that a payment failed. What it often cannot see in one place 
 - **Keep a person in control:** require review and approval before an eligible customer-facing PayPal invoice reminder is sent.
 - **Measure the other side of the operation:** track AI provider/model usage, estimated cost, caching, and budget in the same workspace.
 
-Recoup is positioned as a product for making financial operations more explainable and AI-assisted workflows more accountable. The supplied materials do not include verified team member names, biographies, or individual role assignments, so this README describes the product and its engineering decisions rather than inventing a team backstory.
+PRI is positioned as a product for making financial operations more explainable and AI-assisted workflows more accountable. The supplied materials do not include verified team member names, biographies, or individual role assignments, so this README describes the product and its engineering decisions rather than inventing a team backstory.
 
 ## The problem
 
@@ -36,9 +36,9 @@ Businesses often have enough payment data to see that something went wrong, but 
 
 These gaps matter because delayed investigation can make recovery harder, unclear cash-flow exposure complicates planning, and unmeasured AI usage can make an otherwise useful feature expensive to operate.
 
-## Why Recoup was built
+## Why PRI was built
 
-Recoup was built around a practical observation: revenue operations and AI operations both need trustworthy measurement before they can be optimized.
+PRI was built around a practical observation: revenue operations and AI operations both need trustworthy measurement before they can be optimized.
 
 Payment intelligence answers questions such as *what is outstanding, what failed, and what deserves attention?* AI cost intelligence answers *which provider and model handled a request, how much usage it consumed, and how much it cost?* Both require consistent records, explicit calculations, and enough context for a person to make a decision.
 
@@ -46,7 +46,7 @@ Putting these capabilities in one workspace gives teams a shared operational pic
 
 ## Our approach
 
-Recoup follows a human-reviewed operating loop:
+PRI follows a human-reviewed operating loop:
 
 1. **Observe** — Review revenue summaries, payment outcomes, invoice exposure, recovery status, and AI usage.
 2. **Investigate** — Open individual payment records, inspect status history and failure reasons, and drill into cost or provider breakdowns.
@@ -133,12 +133,12 @@ For payment-specific questions, the real adapter retrieves matching payment reco
 
 ### Authentication, PayPal Connection & Administration
 
-![Recoup Sign In](./docs/images/login.png)
+![PRI Sign In](./docs/images/login.png)
 
 - **Controlled Workspace Access:** Features a split-screen authentication portal backed by JWT bearer authentication, public registration with per-IP rate limiting (requiring administrator activation before login), and role-based user management (`admin` and `member` roles).
 - **PayPal Connection Management:** Administrators can store PayPal Sandbox credentials (encrypted at rest using ASP.NET Core Data Protection), test the connection, inspect sync status, and trigger manual transaction/invoice synchronization. The integration also supports optional webhook notifications with signature verification and idempotent event handling.
 
-## How Recoup works
+## How PRI works
 
 ![Mermaid Diagram](./docs/images/mdiagram.png)
 
@@ -155,7 +155,7 @@ A typical journey is:
 
 ## AI capabilities
 
-Recoup's AI functionality is implemented as a backend gateway, not as direct browser-to-provider calls.
+PRI's AI functionality is implemented as a backend gateway, not as direct browser-to-provider calls.
 
 ### Providers and configuration
 
@@ -191,7 +191,7 @@ Rule-based calculations remain the source of truth for revenue, payment, invoice
 
 ## PayPal integration
 
-PayPal is the primary revenue data source for Recoup's payment-intelligence workflows. It supplies the transaction and invoice records from which payment outcomes, failure patterns, open receivables, and recovery candidates are derived.
+PayPal is the primary revenue data source for PRI's payment-intelligence workflows. It supplies the transaction and invoice records from which payment outcomes, failure patterns, open receivables, and recovery candidates are derived.
 
 ### Developer Platform and Sandbox
 
@@ -217,7 +217,7 @@ For an eligible invoice reminder, the recovery worker calls PayPal's invoice rem
 |---|---|
 | SaaS companies | Review failed payment attempts and invoice balances; investigate repeat failure reasons and overdue receivables. |
 | E-commerce businesses | Monitor PayPal transaction outcomes, refunds, and failure patterns across a selected period. |
-| Subscription-based businesses | Review recurring payment activity and customer cohorts. Recoup does not currently infer subscription cancellation or churn. |
+| Subscription-based businesses | Review recurring payment activity and customer cohorts. PRI does not currently infer subscription cancellation or churn. |
 | Digital service providers | Track invoice-backed receivables and review which outstanding invoices may qualify for a reminder. |
 | Finance and revenue operations | Use revenue summaries, payment investigation, cash-flow aging, and the recovery queue to prioritize follow-up. |
 | Product and engineering teams | Inspect AI provider/model usage, token consumption, estimated cost, cache performance, and monthly budget. |
@@ -225,7 +225,7 @@ For an eligible invoice reminder, the recovery worker calls PayPal's invoice rem
 
 ## Business value and expected impact
 
-Recoup is intended to help teams:
+PRI is intended to help teams:
 
 - **Identify revenue exposure** by separating completed, failed, pending, refunded, and open-invoice amounts.
 - **Investigate payment failures** using transaction detail, status history, and failure-code trends.
