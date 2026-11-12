@@ -13,6 +13,7 @@ const PAYMENT_TONE: Record<string, Tone> = {
 const SUGGESTION_TONE: Record<string, Tone> = {
   proposed: 'brand',
   approved: 'info',
+  reviewed: 'success',
   rejected: 'neutral',
   executed: 'success',
   failed: 'danger',

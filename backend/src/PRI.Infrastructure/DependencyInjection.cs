@@ -65,6 +65,8 @@ public static class DependencyInjection
         services.AddScoped<ISyncRunRepository, SyncRunRepository>();
         services.AddScoped<IWebhookEventRepository, WebhookEventRepository>();
         services.AddScoped<IRevenueQueries, RevenueQueries>();
+        services.AddScoped<ICashFlowOutlookQueries, RevenueQueries>();
+        services.AddScoped<IRevenueAnalyticsQueries, RevenueQueries>();
 
         services.AddScoped<IProviderModelRepository, ProviderModelRepository>();
         services.AddScoped<IUsageRecordRepository, UsageRecordRepository>();

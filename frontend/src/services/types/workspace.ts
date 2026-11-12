@@ -15,6 +15,8 @@ export interface ChatRequest {
   messages: ChatMessageInput[]
   model?: string
   provider?: ChatProvider
+  /** Optional local demo-data context for live AI; never sent as a separate API field. */
+  context?: string
 }
 
 export interface ChatUsage {

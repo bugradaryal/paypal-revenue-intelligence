@@ -16,6 +16,7 @@ import {
   type SortState,
 } from '@/components/patterns'
 import { usePayment, usePayments } from '@/features/revenue/queries'
+import { PaymentFailureAnalysisCard } from '@/features/revenue/PaymentFailureAnalysisCard'
 import { useI18n } from '@/i18n'
 import { useErrorMessage } from '@/i18n/useErrorMessage'
 import { useFormat } from '@/i18n/useFormat'
@@ -215,6 +216,8 @@ export function PaymentsPage() {
   return (
     <>
       <PageHeader title={t('pages.payments.title')} description={t('pages.payments.description')} />
+
+      {range && <PaymentFailureAnalysisCard range={range} />}
 
       <Card className="grid grid-cols-[minmax(0,1fr)] gap-5">
         <FilterBar

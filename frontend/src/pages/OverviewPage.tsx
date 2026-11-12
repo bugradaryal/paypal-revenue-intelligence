@@ -14,6 +14,8 @@ import {
   type Column,
 } from '@/components/patterns'
 import { useAiUsageSummary } from '@/features/ai-cost/queries'
+import { RevenueInsightCard } from '@/features/revenue/RevenueInsightCard'
+import { PaymentOutcomeCard } from '@/features/revenue/PaymentOutcomeCard'
 import { usePayments, useRecoverySummary, useRevenueSummary } from '@/features/revenue/queries'
 import { useI18n } from '@/i18n'
 import { useErrorMessage } from '@/i18n/useErrorMessage'
@@ -106,6 +108,8 @@ export function OverviewPage() {
       />
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6">
+        <RevenueInsightCard days={RANGES[rangeKey]} />
+
         <section aria-label={t('overview.statsLabel')} className="grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             label={t('overview.stats.revenue')}
@@ -152,6 +156,8 @@ export function OverviewPage() {
         {s && s.excludedPaymentCount > 0 && (
           <p className="text-xs text-ink-soft">{t('overview.excluded', { count: f.number(s.excludedPaymentCount) })}</p>
         )}
+
+        <PaymentOutcomeCard range={range} />
 
         <div className="grid grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-3">
           <Card className="xl:col-span-2">
@@ -211,7 +217,7 @@ export function OverviewPage() {
                     <span className="tabular">{f.number(recovery.data.openSuggestionCount)}</span>
                   </Row>
                 </dl>
-                <Link to="/recovery" className={buttonStyles({ variant: 'secondary', size: 'sm', className: 'mt-4 w-full' })}>
+                <Link to="/command-center" className={buttonStyles({ variant: 'secondary', size: 'sm', className: 'mt-4 w-full' })}>
                   {t('overview.recovery.cta')}
                   <ArrowRight className="size-4" />
                 </Link>

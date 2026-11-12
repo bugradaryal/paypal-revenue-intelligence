@@ -1,14 +1,18 @@
 import { ApiError } from '../../errors'
-import type { Page, RequestOptions } from '../../types'
+import type { InsightQuery, IssueQuery, Page, RequestOptions, RevenueInsight } from '../../types'
 import type { Api } from '../types'
 import {
   buildAiBreakdown,
   buildAiSeries,
   buildAiUsageSummary,
+  buildMockCashFlowOutlook,
+  buildMockRevenueAnalytics,
+  buildMockRevenueInsight,
   buildRecoverySummary,
   buildRevenueSummary,
   generateMockSuggestions,
   getMockPayments,
+  getMockIssues,
   getSuggestionStore,
   localizeSuggestion,
   toPayment,
@@ -19,21 +23,7 @@ import { mockSettings } from './settings'
 import { mockStreamChat } from './workspace'
 
 /** Local demo adapter; see data.ts for the dataset's scope. */
-
-/** Approved, executable suggestions finish a few seconds later, like the real backend does. */
-const executeAt = new Map<string, number>()
-const EXECUTION_MS = 4000
-
-function settleExecutions() {
-  const store = getSuggestionStore()
-  for (const [id, at] of executeAt) {
-    const s = store.get(id)
-    if (s?.status === 'approved' && Date.now() >= at) {
-      store.set(id, { ...s, status: 'executed', updatedAt: new Date().toISOString() })
-      executeAt.delete(id)
-    }
-  }
-}
+const mockInsights: RevenueInsight[] = []
 
 export { isMockFailing, setMockFailure } from './failure'
 
@@ -100,9 +90,26 @@ export const mockApi: Api = {
 
     getRecoverySummary: (range, o) => respond(() => buildRecoverySummary(range), o),
 
+    getCashFlowOutlook: (o) => respond(buildMockCashFlowOutlook, o),
+
+    getRevenueAnalytics: (range, o) => respond(() => buildMockRevenueAnalytics(range), o),
+
+    listIssues: (q: IssueQuery, o) =>
+      respond(() => {
+        const dir = q.sortDir === 'asc' ? 1 : -1
+        const rows = getMockIssues()
+          .filter((issue) => !q.status?.length || q.status.includes(issue.status))
+          .filter((issue) => !q.type?.length || q.type.includes(issue.type))
+        rows.sort((a, b) =>
+          q.sortBy === 'amount'
+            ? dir * (Number(a.amount.amount) - Number(b.amount.amount))
+            : dir * (Date.parse(a.problemSince) - Date.parse(b.problemSince)),
+        )
+        return paginate(rows, q.page, q.pageSize)
+      }, o),
+
     listSuggestions: (q, o) =>
       respond(() => {
-        settleExecutions()
         const dir = q.sortDir === 'asc' ? 1 : -1
         const rows = [...getSuggestionStore().values()]
           .filter((s) => !q.status?.length || q.status.includes(s.status))
@@ -118,7 +125,6 @@ export const mockApi: Api = {
 
     decideSuggestion: (id, request, o) =>
       respond(() => {
-        settleExecutions()
         const store = getSuggestionStore()
         const current = store.get(id)
         if (!current) throw new ApiError({ status: 404, title: 'Suggestion not found', code: 'suggestion_not_found' })
@@ -131,13 +137,30 @@ export const mockApi: Api = {
           updatedAt: new Date().toISOString(),
         }
         store.set(id, updated)
-        if (request.decision === 'approve' && updated.executable) executeAt.set(id, Date.now() + EXECUTION_MS)
         return localizeSuggestion(updated)
       }, o),
 
     generateSuggestions: async (o) => {
       await delay(1500, o?.signal) // AI generation is slow
       return respond(() => ({ createdCount: generateMockSuggestions() }), o)
+    },
+
+    listInsights: (q: InsightQuery, o) =>
+      respond(() => {
+        if (mockInsights.length === 0) mockInsights.push(buildMockRevenueInsight(30))
+        return paginate([...mockInsights].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)), q.page, q.pageSize)
+      }, o),
+
+    generateInsight: async (days, o) => {
+      await delay(700, o?.signal)
+      return respond(() => {
+        if (!Number.isInteger(days) || days < 1 || days > 90) {
+          throw new ApiError({ status: 400, title: 'Insight period must be between 1 and 90 days', code: 'validation_failed' })
+        }
+        const insight = buildMockRevenueInsight(days)
+        mockInsights.unshift(insight)
+        return insight
+      }, o)
     },
   },
 

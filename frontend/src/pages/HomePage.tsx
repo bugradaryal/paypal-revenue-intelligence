@@ -108,6 +108,10 @@ export function HomePage() {
           <div className="pointer-events-none absolute -right-32 bottom-0 size-[28rem] rounded-full bg-sky-500/10 blur-[120px]" />
           <div aria-hidden="true" className="pointer-events-none absolute right-[12%] top-20 hidden size-64 rounded-full border border-brand-200/10 motion-safe:animate-float lg:block" />
           <div aria-hidden="true" className="pointer-events-none absolute right-[14%] top-28 hidden size-52 rounded-full border border-dashed border-white/10 motion-safe:animate-orbit lg:block" />
+          <div aria-hidden="true" className="pointer-events-none absolute bottom-12 left-[7%] hidden size-48 motion-safe:animate-float lg:block">
+            <div className="absolute inset-0 rounded-full border border-sky-200/10 motion-safe:animate-orbit" />
+            <div className="absolute inset-5 rounded-full border border-dashed border-brand-200/10 motion-safe:animate-orbit-reverse" />
+          </div>
           <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[0.92fr_1.08fr] lg:gap-10 lg:px-12 lg:py-28">
             <div className="animate-rise-in">
               <div className="mb-7 inline-flex items-center gap-3 rounded-full border border-brand-300/30 bg-brand-400/10 px-5 py-3 text-sm font-bold tracking-wide text-brand-100 sm:text-base">

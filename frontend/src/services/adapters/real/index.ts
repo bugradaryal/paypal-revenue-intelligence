@@ -6,6 +6,7 @@ import type {
   AiModelInfo,
   AiCostPoint,
   AiUsageSummary,
+  CashFlowOutlook,
   DateRange,
   GenerateSuggestionsResult,
   Page,
@@ -16,12 +17,15 @@ import type {
   PaymentDetail,
   RecoverySuggestion,
   RecoverySummary,
+  RevenueAnalytics,
+  RevenueIssue,
+  RevenueInsight,
   RevenueSummary,
 } from '../../types'
 import type { Api } from '../types'
 
 /**
- * Real adapter: one function per operation, URLs and shapes straight from docs/API_CONTRACT.md (v0.4).
+ * Real adapter: one function per operation, URLs and shapes straight from docs/API_CONTRACT.md (v0.8).
  * Which operations are actually live is decided in ../index.ts (READY); the rest stay on the mock adapter.
  */
 
@@ -175,6 +179,25 @@ export const realApi: Api = {
     getRecoverySummary: (r, o) =>
       http.get<RecoverySummary>('revenue/recovery/summary', { query: range(r), signal: o?.signal }),
 
+    getCashFlowOutlook: (o) =>
+      http.get<CashFlowOutlook>('revenue/cash-flow/outlook', { signal: o?.signal }),
+
+    getRevenueAnalytics: (r, o) =>
+      http.get<RevenueAnalytics>('revenue/analytics', { query: range(r), signal: o?.signal }),
+
+    listIssues: (q, o) =>
+      http.get<Page<RevenueIssue>>('revenue/issues', {
+        query: {
+          page: q.page,
+          pageSize: q.pageSize,
+          status: q.status,
+          type: q.type,
+          sortBy: q.sortBy,
+          sortDir: q.sortDir,
+        },
+        signal: o?.signal,
+      }),
+
     listSuggestions: (q, o) =>
       http.get<Page<RecoverySuggestion>>('revenue/suggestions', {
         query: {
@@ -196,6 +219,19 @@ export const realApi: Api = {
 
     generateSuggestions: (o) =>
       http.post<GenerateSuggestionsResult>('revenue/suggestions/generate', { signal: o?.signal, timeoutMs: LONG_REQUEST_TIMEOUT_MS }),
+
+    listInsights: (q, o) =>
+      http.get<Page<RevenueInsight>>('revenue/insights', {
+        query: { page: q.page, pageSize: q.pageSize },
+        signal: o?.signal,
+      }),
+
+    generateInsight: (days, o) =>
+      http.post<RevenueInsight>('revenue/insights/generate', {
+        query: { days },
+        signal: o?.signal,
+        timeoutMs: LONG_REQUEST_TIMEOUT_MS,
+      }),
   },
 
   aiCost: {
@@ -254,7 +290,7 @@ export const realApi: Api = {
         es: 'Spanish',
       }[getCurrentLocale()]
       const latestQuestion = [...request.messages].reverse().find((message) => message.role === 'user')?.content ?? ''
-      const paymentContext = await findPaymentContext(latestQuestion, options?.signal)
+      const paymentContext = request.context ?? await findPaymentContext(latestQuestion, options?.signal)
       const response = await http.post<CompletionResponse>('gateway/completions', {
         body: {
           model: request.model ?? 'auto',
@@ -264,6 +300,7 @@ export const realApi: Api = {
               role: 'system',
               content: [
                 `You are a helpful PayPal Revenue Intelligence assistant. Reply in ${language}.`,
+                'Treat failed payment amounts as exposure, not confirmed lost revenue, and expected recovery as an estimate. Never claim to have executed an action, changed a record, or contacted a customer. Recommendations are advisory and require explicit user approval.',
                 paymentContext,
               ].filter(Boolean).join('\n\n'),
             },

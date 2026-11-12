@@ -10,6 +10,7 @@ import { MessageBubble } from '@/features/workspace/MessageBubble'
 import { useWorkspaceChat } from '@/features/workspace/useWorkspaceChat'
 import { useI18n } from '@/i18n'
 import { useFormat } from '@/i18n/useFormat'
+import { env } from '@/config/env'
 
 const STARTERS = ['failures', 'recovery', 'cost', 'help'] as const
 
@@ -65,6 +66,12 @@ export function AiWorkspacePage() {
           </Button>
         }
       />
+
+      {env.isMock && (
+        <p role="note" className="mb-5 rounded-xl border border-line bg-surface-card px-4 py-3 text-sm text-ink-soft">
+          {env.aiSource === 'real' ? t('workspace.liveAiDemoDataNotice') : t('workspace.mockAssistantNotice')}
+        </p>
+      )}
 
       <div className="grid min-h-[calc(100dvh-15rem)] grid-cols-[minmax(0,1fr)] grid-rows-[1fr_auto] gap-6">
         <div className="grid content-start gap-6">

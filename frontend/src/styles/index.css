@@ -38,6 +38,9 @@
   --animate-rise-in: rise-in 300ms var(--ease-out-soft) both;
   --animate-float: float 7s ease-in-out infinite;
   --animate-orbit: orbit 18s linear infinite;
+  --animate-orbit-reverse: orbit 26s linear infinite reverse;
+  --animate-insight-sweep: insight-sweep 14s ease-in-out infinite;
+  --animate-ambient-drift: ambient-drift 36s ease-in-out infinite alternate;
 
   @keyframes fade-in {
     from { opacity: 0; }
@@ -53,6 +56,15 @@
   }
   @keyframes orbit {
     to { transform: rotate(360deg); }
+  }
+  @keyframes insight-sweep {
+    0%, 18% { transform: translateX(-115%) skewX(-12deg); opacity: 0; }
+    28% { opacity: 0.7; }
+    58%, 100% { transform: translateX(190%) skewX(-12deg); opacity: 0; }
+  }
+  @keyframes ambient-drift {
+    from { background-position: 0% 0%, 100% 10%; }
+    to { background-position: 12% 8%, 88% 18%; }
   }
 }
 
@@ -206,6 +218,8 @@
       radial-gradient(ellipse at 0% 0%, rgb(242 140 69 / 0.075), transparent 34rem),
       radial-gradient(ellipse at 100% 12%, rgb(242 140 69 / 0.035), transparent 30rem);
     background-attachment: fixed;
+    background-size: 125% 125%, 125% 125%;
+    animation: ambient-drift 36s ease-in-out infinite alternate;
   }
 
   .dark .app-ambient {

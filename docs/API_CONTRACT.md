@@ -1,6 +1,6 @@
 # API Sözleşmesi
 
-**Sürüm:** 0.4 · **Güncelleme:** 2026-11-11 · **Sahip:** Backend
+**Sürüm:** 0.7 · **Güncelleme:** 2026-11-12 · **Sahip:** Backend
 
 Frontend ve backend için tek doğruluk kaynağı. `API_NEEDS.md` ile bu dosya çeliştiğinde bu dosya geçerlidir. Bir endpoint yalnızca **Hazır** bölümündeyse gerçek olarak kullanılır; **Planlı** bölümündekiler için frontend mock adapter kullanır. Her API değişikliği aşağıdaki değişiklik kaydına işlenir.
 
@@ -8,6 +8,9 @@ Frontend ve backend için tek doğruluk kaynağı. `API_NEEDS.md` ile bu dosya �
 
 | Sürüm | Tarih | Değişiklik |
 |---|---|---|
+| 0.8 | 2026-11-12 | `GET /revenue/analytics` eklendi: USD ödeme sonucu kırılımı, ödeme kohortları, başarısızlık nedeni trendleri ve eşikleri açıklanmış kural tabanlı anomali sinyalleri. |
+| 0.7 | 2026-11-12 | Recovery Command Center için issue sözleşmesi ve fatura bakiyesine dayalı Cash Flow Outlook uçları eklendi; yabancı para bakiyelerinin özgün para biriminde gösterimi belgelendi. |
+| 0.6 | 2026-11-12 | Gelir içgörüsü listeleme/üretme uçları ve demo/recovery karar davranışları belgelendi. |
 | 0.5 | 2026-11-12 | Admin-only kullanıcı listeleme ve rol atanmış kullanıcı oluşturma uçları eklendi (bölüm 4). |
 | 0.4 | 2026-11-11 | PayPal bağlantı durumu, şifreli kimlik bilgisi yönetimi, OAuth bağlantı testi ve idempotent işlem eşitleme uçları eklendi (bölüm 5). |
 | 0.3 | 2026-11-07 | `API_NEEDS.md` yanıtlandı (bölüm 6). **Kırıcı:** para `amount` artık string; sayfalama alanı `totalItems`; sıralama `sortBy`/`sortDir`; enum değerleri snake_case (`user.role`: `admin` / `member`); tüm zaman damgaları `Z` ile biter (`/system/ping` dahil). Gün 2-4 endpoint şemaları "Planlı (şema kabul edildi)" olarak eklendi. |
@@ -35,13 +38,13 @@ Production adresleri henüz belirlenmedi; environment variable ile tanımlanacak
 4. **Id'ler:** opak string. Şu an Guid biçimindedir, frontend içeriğine güvenmemeli.
 5. **Zaman:** ISO-8601, her zaman UTC ve `Z` ile biter (`2026-11-07T10:30:00Z`, milisaniye olabilir). Gün bucket'ları UTC gününe göredir.
 6. **Para:** `{ "amount": "1240.00", "currency": "USD" }`. `amount` ondalık **string**, ondalık ayırıcı `.`. Ödeme tutarlarında 2, AI maliyetlerinde 6 basamağa kadar. Frontend basamak sayısına güvenmez, yalnızca ayrıştırıp biçimlendirir; float ve minor unit yok.
-7. **Para birimi kapsamı (MVP kararı):** Tek para birimi USD. Özet, seri ve AI maliyet rakamları USD'dir. USD dışı ödemeler listelerde kendi `currency` değeriyle görünür ama özet rakamlara girmez; sayıları özet yanıtındaki `excludedPaymentCount` alanında bildirilir.
+7. **Para birimi kapsamı:** Revenue summary, analytics ve cash-flow USD toplamları yalnızca USD kayıtlarını içerir. `CashFlowOutlook.foreignCurrencyExposure`, açık fatura bakiyelerini özgün para biriminde ayrı listeler; kur dönüşümü yapılmaz. USD dışı ödemeler USD toplamlarından çıkarılır ve ilgili `excludedPaymentCount` alanında bildirilir. Başarısızlık sayıları tüm para birimlerini kapsar; parasal hata tutarları yalnız USD'dir.
 8. **Sayfalama:** `?page=1&pageSize=20` (`page` 1'den başlar, varsayılan `pageSize` 20, en fazla 100). Yanıt: `{ "items": [], "page": 1, "pageSize": 20, "totalItems": 0 }`.
 9. **Sıralama ve filtre:** `sortBy`, `sortDir=asc|desc` (varsayılan `createdAt` / `desc`; geçerli `sortBy` değerleri endpoint'te yazılıdır), `status` (tekrarlanabilir: `status=failed&status=pending`), `search`, `from`, `to`. `from` dahil, `to` **hariç**.
 10. **Tarih aralığı:** Özet, seri ve dağılım endpoint'lerinde `from` ve `to` **zorunludur**; liste endpoint'lerinde isteğe bağlıdır. `from < to` olmalı ve aralık en fazla 366 gün olabilir; aksi halde `400 validation_failed`.
-11. **Hesaplamalar:** Tüm toplam, oran ve tasarruf değerlerini backend hesaplar. Ne LLM ne frontend hesaplar; frontend yalnızca biçimlendirir.
+11. **Hesaplamalar:** Tüm finansal toplamları, oranları, kohortları ve anomali eşiklerini backend hesaplar. LLM ölçüm yapmaz; frontend değerleri biçimlendirir ve görselleştirir.
 12. **AI metin dili:** AI'ın yazdığı metinler (`rationale`, insight, workspace cevapları) isteğin `Accept-Language` başlığındaki dilde üretilir. Desteklenen diller `en`, `de`, `tr`, `es`; başka değerde veya başlık yoksa `en`. Üretilen metin saklanır ve okurken çevrilmez; kaydın üretildiği dil `rationaleLanguage` alanında döner.
-13. **Zaman aşımı:** Normal uçlar birkaç saniyede yanıt verir. AI üretimi yapan uçlar (`POST /revenue/suggestions/generate`, `POST /gateway/completions`) 60 saniyeye kadar sürebilir; frontend bu uçlar için 60 sn timeout kullanmalıdır. MVP'de istek hız limiti yoktur.
+13. **Zaman aşımı:** Normal uçlar birkaç saniyede yanıt verir. AI üretimi yapan uçlar (`POST /revenue/suggestions/generate`, `POST /revenue/insights/generate`, `POST /gateway/completions`) 60 saniyeye kadar sürebilir; frontend bu uçlar için 60 sn timeout kullanmalıdır. MVP'de istek hız limiti yoktur.
 14. **Demo verisi:** PayPal'dan gelmeyen kayıtlar `dataSource: "demo"` ile döner (gerçek olanlar `"paypal"`). Arayüz demo kayıtları açıkça belirtmelidir.
 
 ## 3. Hata formatı
@@ -99,6 +102,8 @@ Planlı özel kodlar (`provider_unavailable` gibi) ilgili endpoint hazır olduğ
 | PUT | `/api/v1/paypal/credentials` | Admin | Sandbox kimlik bilgilerini şifreli saklar; secret yanıtlanmaz |
 | POST | `/api/v1/paypal/test-connection` | Admin | PayPal OAuth kimlik doğrulamasını sınar; token döndürmez |
 | POST | `/api/v1/paypal/sync?days=30` | Admin | PayPal fatura ve işlemlerini idempotent olarak içe aktarır |
+| GET | `/api/v1/revenue/insights?page=1&pageSize=10` | Bearer | En son gelir içgörülerini listeler |
+| POST | `/api/v1/revenue/insights/generate?days=30` | Bearer | Backend metrikleri ve AI/kural tabanlı yorumla içgörü üretir |
 
 **POST `/api/v1/admin/users`** isteği `{ "email": "user@example.com", "displayName": "Example User", "password": "at-least-12-characters", "role": "member" }`. `role` yalnızca `admin` veya `member` olabilir. Yanıt `201` ve user DTO'sudur; parola veya parola özeti içermez. Aynı e-posta için `409 email_already_exists`, geçersiz alanlar için `400 validation_failed` döner. `GET /api/v1/admin/users` yanıtı kullanıcı DTO'larının dizisidir.
 
@@ -138,7 +143,7 @@ Yanıt `200`:
 
 Yerel geliştirme demo kullanıcısı: `admin@pri.local` / `Admin123!`.
 
-### Planlı (şema kabul edildi, henüz uygulanmadı)
+### İşlev sözleşmeleri (hazır ve planlanan uçlar)
 
 Aşağıdaki şemalar `API_NEEDS.md` önerilerine dayanır; farklar yanıtlarda belirtilmiştir. Hedef günler tahminidir. Hazır olana kadar frontend mock adapter kullanır. Gösterimde `Money = { amount: string; currency: string }` ve `Range = { from: string; to: string }`.
 
@@ -233,14 +238,18 @@ type RecoverySummary = {
 // sorgu: page, pageSize, status (tekrarlanabilir), paymentId, sortBy = createdAt | expectedRecovery, sortDir
 type Suggestion = {
   id: string;
-  paymentId: string;
-  customerName: string;
+  issueId: string;
+  issueType: "failed_payment" | "pending_payment" | "overdue_invoice";
+  paymentId: string | null;
+  invoiceId: string | null;
+  customerName: string | null;
   type: "send_reminder" | "retry_payment" | "offer_alternative_method";
   rationale: string;
   rationaleLanguage: "en" | "de" | "tr" | "es";
   expectedRecovery: Money;
   status: "proposed" | "approved" | "rejected" | "executed" | "failed";
   executable: boolean;      // false ise yalnızca tavsiyedir; onaylansa bile otomatik aksiyon çalışmaz
+  executionError: string | null;
   dataSource: "paypal" | "demo";
   createdAt: string;
   updatedAt: string;
@@ -251,9 +260,153 @@ type Suggestion = {
 ```
 
 - Öneriler kullanıcı tetiklemesiyle üretilir (`generate`, `Accept-Language` dikkate alınır); arka planda otomatik üretim yoktur (MVP kararı).
-- Kullanıcı onayı olmadan hiçbir dış aksiyon çalışmaz. `decision` yanıtı güncel öneriyi hemen döner (`approved` veya `rejected`). `executable: true` olan bir öneri onaylanınca backend aksiyonu arka planda çalıştırır ve durum birkaç saniye içinde `executed` veya `failed` olur; frontend öneriyi yeniden sorgular (2-3 sn aralıkla, en fazla 30 sn). `executable: false` öneriler `approved` olarak kalır.
+- Kullanıcı onayı olmadan hiçbir dış aksiyon çalışmaz. `decision` yanıtı güncel öneriyi hemen döner (`approved` veya `rejected`). `executable: true` olan bir öneri onaylanınca backend aksiyonu arka planda çalıştırır ve durum birkaç saniye içinde `executed` veya `failed` olur; frontend öneriyi yeniden sorgular (2-3 sn aralıkla, en fazla 30 sn). `executable: false` öneriler `approved` olarak kalır; arayüzde karar "incelendi" olarak sunulur.
 - MVP'de yalnızca PayPal faturasına bağlı kayıtlar için `send_reminder` çalıştırılabilirdir (PayPal Sandbox hatırlatması); `retry_payment` ve `offer_alternative_method` tavsiyedir.
+- Demo adapter'ında kayıtlar kurmacadır; tavsiyeler `executable: false` olur, "incelendi" kararı yerel olarak saklanır ve hiçbir PayPal çağrısı veya sahte `executed` sonucu üretilmez.
 - Karara bağlanmış öneriye tekrar karar verilirse `409` ve `code: "suggestion_already_decided"` döner.
+
+**Gün 4: Recovery operations and cash flow**
+
+```ts
+// GET /api/v1/revenue/issues?page=1&pageSize=20&status=open&sortBy=amount&sortDir=desc
+type RevenueIssue = {
+  id: string;
+  type: "failed_payment" | "pending_payment" | "overdue_invoice";
+  status: "open" | "recovered" | "void";
+  paymentId: string | null;
+  invoiceId: string | null;
+  customerId: string | null;
+  customerName: string | null;
+  amount: Money;
+  recoveredAmount: Money;
+  failureCode: string | null;
+  dataSource: "paypal" | "demo";
+  problemSince: string;
+  detectedAt: string;
+  resolvedAt: string | null;
+  evidence: "status_changed" | "linked_invoice_payment" | "matching_retry_payment" | null;
+};
+
+// GET /api/v1/revenue/cash-flow/outlook
+type CashFlowOutlook = {
+  asOfDateUtc: string;                  // UTC calendar date (YYYY-MM-DD)
+  openReceivables: Money;               // USD only; open balance, not invoice face value
+  openInvoiceCount: number;
+  overdueReceivables: Money;
+  overdueInvoiceCount: number;
+  dueWithin7Days: Money;
+  dueWithin7DaysCount: number;
+  dueWithin30Days: Money;
+  dueWithin30DaysCount: number;
+  dueWithin90Days: Money;
+  dueWithin90DaysCount: number;
+  unscheduledReceivables: Money;
+  unscheduledInvoiceCount: number;
+  overdueAging: { key: "1_7_days" | "8_30_days" | "31_plus_days"; amount: Money; invoiceCount: number }[];
+  weeklySchedule: { from: string; toExclusive: string; amount: Money; invoiceCount: number }[]; // 13 USD buckets
+  foreignCurrencyExposure: { currency: string; openAmount: Money; invoiceCount: number }[]; // native currency, no FX conversion
+  priorityInvoices: CashFlowInvoice[];
+};
+
+type CashFlowInvoice = {
+  id: string;
+  invoiceNumber: string | null;
+  customerName: string | null;
+  balanceDue: Money;                    // original invoice currency
+  status: "draft" | "sent" | "payment_pending" | "partially_paid" | "paid" | "cancelled" | "refunded";
+  dueDate: string | null;               // YYYY-MM-DD
+  daysOverdue: number | null;
+  dataSource: "paypal" | "demo";
+};
+```
+
+- Cash-flow open balances include sent, payment-pending, and partially-paid invoices, calculated as `max(invoice amount - linked completed payments in the same currency, 0)`. Closed invoices and zero balances are excluded.
+- USD summaries and the 13-week schedule include USD invoices only. Other currencies remain separate in `foreignCurrencyExposure` and `priorityInvoices`; the API does not apply an exchange rate.
+- The schedule groups stated due dates. It is not a probability-weighted forecast or a promise that an invoice will be paid.
+- `Revenue Signals` is an in-app live view assembled from these read endpoints. The current version refreshes while open; it does not persist, dismiss, or deliver push/email notifications.
+
+**GET `/api/v1/revenue/analytics?from=...&to=...`**
+
+`from` dahil, `to` hariçtir. Her iki zaman da zorunludur. Yanıt:
+
+```ts
+type RevenueAnalytics = {
+  range: { from: string; to: string };
+  asOfDateUtc: string;
+  leakage: {
+    transactionActivity: Money;        // Seçili aralıktaki USD kayıtlarının toplamı; kategori tutarlarının toplamı
+    completedAmount: Money; completedCount: number;
+    failedAttemptAmount: Money; failedCount: number;
+    pendingAmount: Money; pendingCount: number;
+    refundedAmount: Money; refundedCount: number;
+    currentOpenReceivables: Money; currentOpenInvoiceCount: number;
+    currentOverdueReceivables: Money; currentOverdueInvoiceCount: number;
+    cancellationTrackingAvailable: boolean; // Mevcut veri modelinde false
+  };
+  daily: {
+    date: string;                       // YYYY-MM-DD, UTC
+    completedAmount: Money; failedAmount: Money; pendingAmount: Money; refundedAmount: Money;
+  }[];
+  failureReasons: { code: string; count: number; amountUsd: Money }[];
+  failureTrend: { date: string; code: string; count: number }[];
+  cohorts: {
+    cohortMonth: string; cohortSize: number; // İlk başarılı USD ödeme ayına göre
+    periods: { ageInMonths: number; activeCustomers: number; retentionRate: number; revenuePerCustomer: Money }[];
+  }[];
+  anomalies: {
+    windowDays: number;
+    failureRateSpike: {
+      currentRate: number; baselineRate: number; currentFailedCount: number;
+      currentPaymentCount: number; baselinePaymentCount: number;
+    } | null;
+    revenueDrops: {
+      currency: string; currentRevenue: Money; baselineRevenue: Money; changePercent: number;
+      currentPaymentCount: number; baselinePaymentCount: number;
+    }[];
+  };
+  excludedPaymentCount: number;
+};
+```
+
+- Waterfall ödeme kayıtlarını seçili aralıktaki mevcut `completed`, `failed`, `pending` ve `refunded` durumlarına ayırır. Başarısız denemeler kesin kayıp gelir değildir; açık/vadesi geçmiş fatura bakiyesi güncel snapshot olarak ayrıca verilir ve waterfall'a eklenmez (çifte sayım riski).
+- İptal edilen işlemler mevcut PayPal veri modelinde izlenmediğinden `cancellationTrackingAvailable` false'dur. Refund ayrı durumdur; iptal olarak değerlendirilmez. Tahmini kayıp gelir üretilmez.
+- Kohort, sistemdeki ilk başarılı USD ödeme ayına göre tanımlanır. Aylık tutundurma yalnız ilgili ayda tamamlanmış bir ödeme yapan müşteri demektir; abonelik devamlılığı veya kesin churn ölçüsü değildir. Yalnızca son altı tamamlanmış ay gösterilir.
+- Anomali kuralları son 14 tam UTC gününü önceki 14 tam UTC günüyle karşılaştırır. Başarısızlık oranı artışı için her iki dönemde en az 10 ödeme, güncel dönemde en az 3 başarısızlık ve 10 yüzde puan artış; para birimi bazında tamamlanmış tutar düşüşü için en az 5 baz ödeme ve en az %40 düşüş gerekir. Bunlar kural tabanlı uyarılardır, tahmin değildir.
+- Failure reason sayıları tüm para birimlerini kapsar; `amountUsd` USD dışı tutarları içermez. Kohort gelirleri ve waterfall tutarları USD'dir.
+
+**Gün 4: Revenue Insights**
+
+```ts
+// GET /api/v1/revenue/insights?page=1&pageSize=10
+// yanıt: { items: RevenueInsight[]; page; pageSize; totalItems }
+
+// POST /api/v1/revenue/insights/generate?days=30
+// days: integer 1..90 (default 30), Accept-Language: en | de | tr | es
+// yanıt: RevenueInsight
+type RevenueInsight = {
+  id: string;
+  periodFrom: string;
+  periodTo: string;               // exclusive
+  metrics: {
+    revenue: Money; failedAmount: Money; pendingAmount: Money;
+    paymentCount: number; failedCount: number; failureRate: number;
+    lostAmount: Money; recoveredAmount: Money; recoveryRate: number;
+    overdueInvoiceCount: number; overdueInvoiceAmount: Money;
+    topFailureReasons: { code: string; count: number; amount: Money }[];
+    previous: {
+      revenue: Money; failedAmount: Money;
+      revenueChangePercent: number | null; failedAmountChangePercent: number | null;
+    };
+  };
+  commentary: string;
+  commentaryLanguage: "en" | "de" | "tr" | "es";
+  commentarySource: "ai" | "rule";
+  gatewayRequestId: string | null;
+  createdAt: string;
+};
+```
+
+All monetary totals and rates are calculated by the backend and stored with the insight. AI only writes commentary from those validated facts; when AI is unavailable or its output fails validation, `commentarySource` is `rule`. The frontend requests generation only after a user action.
 
 **Gün 4: Ayarlar**
 
@@ -340,8 +493,13 @@ unavailable; rejected requests do not trigger fallback. The budget is a spending
 | `aiCost.getUsageSeries(range)` | `GET /gateway/usage/series` | Gün 3 |
 | `aiCost.getBreakdown(range)` | `GET /gateway/usage/breakdown` | Gün 3 |
 | `revenue.getRecoverySummary(range)` | `GET /revenue/recovery/summary` | Gün 4 |
+| `revenue.listIssues(query)` | `GET /revenue/issues` | Gün 4 |
 | `revenue.listSuggestions(query)` | `GET /revenue/suggestions` | Gün 4 |
+| `revenue.getCashFlowOutlook()` | `GET /revenue/cash-flow/outlook` | Gün 4 |
+| `revenue.getRevenueAnalytics(range)` | `GET /revenue/analytics` | Gün 4 |
 | `revenue.decideSuggestion(id, decision)` | `POST /revenue/suggestions/{id}/decision` | Gün 4 |
+| `revenue.listInsights(query)` | `GET /revenue/insights` | Gün 4 |
+| `revenue.generateInsight(days)` | `POST /revenue/insights/generate?days=...` | Gün 4 |
 | Settings okuma/yazma | `/gateway/budgets`, `/gateway/routing-rules` | Gün 4 |
 | `settings.getPayPalConnection()` | `GET /paypal/connection` | Hazır |
 | `settings.savePayPalCredentials(request)` | `PUT /paypal/credentials` | Hazır |
@@ -357,7 +515,7 @@ unavailable; rejected requests do not trigger fallback. The budget is a spending
 | 2 | Header'lar | Bölüm 2, madde 2. Zorunlu ek header yok. |
 | 3 | CORS | `http://localhost:5173` izinli, credentials yok. |
 | 4 | Hata formatı | Önerildiği gibi kabul: ProblemDetails + `code` + `errors` (bölüm 3). |
-| 5 | Para | String `amount` + ISO 4217 `currency` (madde 6). MVP'de çoklu para birimi kapsam dışıdır, yalnızca USD (madde 7). |
+| 5 | Para | String `amount` + ISO 4217 `currency` (madde 6). Finansal toplamlar USD; Cash Flow yabancı para bakiyelerini dönüştürmeden özgün para birimiyle listeler (madde 7). |
 | 6 | Tarih | ISO-8601 UTC, `Z` ile (madde 5). |
 | 7 | Id | Opak string (madde 4). |
 | 8 | Sayfalama | `page` + `pageSize`, yanıt `totalItems` (madde 8). Varsayılan 20, en fazla 100. |

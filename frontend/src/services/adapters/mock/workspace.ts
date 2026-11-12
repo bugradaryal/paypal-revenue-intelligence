@@ -127,6 +127,71 @@ function buildAnswer(topic: Topic, lang: Lang) {
   return { text, suggestion: suggestion ? localizeSuggestion(suggestion) : undefined }
 }
 
+export function buildMockWorkspaceContext(): string {
+  const dateRange = lastDays(30)
+  const revenue = buildRevenueSummary(dateRange)
+  const recovery = buildRecoverySummary(dateRange)
+  const aiUsage = buildAiUsageSummary(dateRange)
+  const from = Date.parse(dateRange.from)
+  const failedPayments = getMockPayments()
+    .filter((payment) => payment.status === 'failed' && Date.parse(payment.createdAt) >= from)
+    .sort((a, b) => Number(b.amount.amount) - Number(a.amount.amount))
+    .slice(0, 8)
+    .map(({ id, customerName, amount, failureCode, createdAt }) => ({
+      id,
+      customerName,
+      amount,
+      failureCode,
+      createdAt,
+    }))
+  const openSuggestions = [...getSuggestionStore().values()]
+    .filter((suggestion) => suggestion.status === 'proposed')
+    .slice(0, 8)
+    .map(({ paymentId, customerName, type, expectedRecovery, rationale }) => ({
+      paymentId,
+      customerName,
+      type,
+      expectedRecovery,
+      rationale,
+    }))
+
+  return [
+    'This is fictional local demo data, not live PayPal or verified business data. Answer using this snapshot when relevant and state that it is demo data. Failed payment amounts are exposure, not confirmed lost revenue; expected recovery is an estimate. AI usage figures here are demo-only, not actual account totals; the per-answer receipt shows the actual completion cost. Do not claim to have changed or contacted anything. Recommendations are advisory only.',
+    `Date range: ${dateRange.from} to ${dateRange.to} (end exclusive).`,
+    JSON.stringify(
+      {
+        revenue: {
+          total: revenue.totalRevenue,
+          failed: revenue.failedAmount,
+          pending: revenue.pendingAmount,
+          recovered: revenue.recoveredRevenue,
+          paymentCount: revenue.paymentCount,
+          failedCount: revenue.failedCount,
+          pendingCount: revenue.pendingCount,
+        },
+        recovery: {
+          failedPaymentExposure: recovery.lostAmount,
+          recoveredFromFailures: recovery.recoveredAmount,
+          recoveryRate: recovery.recoveryRate,
+          openSuggestionCount: recovery.openSuggestionCount,
+        },
+        aiUsageDemoOnly: {
+          cost: aiUsage.totalCost,
+          requests: aiUsage.totalRequests,
+          inputTokens: aiUsage.inputTokens,
+          outputTokens: aiUsage.outputTokens,
+          cacheHitRate: aiUsage.cacheHitRate,
+          savings: aiUsage.savings,
+        },
+        failedPayments,
+        openSuggestions,
+      },
+      null,
+      2,
+    ),
+  ].join('\n\n')
+}
+
 const seenQuestions = new Set<string>()
 
 export async function* mockStreamChat(request: ChatRequest, options?: RequestOptions): AsyncGenerator<ChatEvent> {

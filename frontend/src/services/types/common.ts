@@ -5,6 +5,8 @@
 
 /** ISO 8601 date-time in UTC, e.g. "2026-11-06T10:15:00Z". */
 export type IsoDateTime = string
+/** ISO 8601 calendar date, e.g. "2026-11-06". */
+export type IsoDate = string
 
 /**
  * Money as a decimal STRING plus ISO 4217 currency. Never a float: the frontend only formats it,

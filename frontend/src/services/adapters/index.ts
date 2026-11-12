@@ -1,16 +1,31 @@
 import { env } from '@/config/env'
 import { mockApi } from './mock'
+import { buildMockWorkspaceContext } from './mock/workspace'
 import { realApi } from './real'
 import type { Api } from './types'
 
 /**
- * The only data source the UI talks to. The choice is made by VITE_DATA_SOURCE in .env:
+ * The only API surface the UI talks to. Data and AI sources can be selected independently:
  *
- * - mock: everything is sample data, no login.
- * - real: operations call the backend.
+ * - VITE_DATA_SOURCE=mock: business data uses the local sample dataset.
+ * - VITE_AI_SOURCE=real (default): workspace chat uses the authenticated backend.
  */
 
-export const api: Api = env.isMock ? mockApi : realApi
+const dataApi: Api = env.isMock ? mockApi : realApi
+const workspace: Api['workspace'] =
+  env.aiSource === 'real'
+    ? env.isMock
+      ? {
+          streamChat: (request, options) =>
+            realApi.workspace.streamChat(
+              { ...request, context: buildMockWorkspaceContext() },
+              options,
+            ),
+        }
+      : realApi.workspace
+    : mockApi.workspace
+
+export const api: Api = { ...dataApi, workspace }
 
 /** True when the local demo adapter is selected. */
 export const hasMockOperations: boolean = env.isMock

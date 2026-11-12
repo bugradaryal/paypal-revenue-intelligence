@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PRI.Application.Common;
 using PRI.Application.Revenue.DTOs;
 using PRI.Application.Revenue.Interfaces;
+using PRI.Application.Revenue.Services;
 using PRI.Domain.Revenue.Entities;
 using PRI.Domain.Revenue.Enums;
 using PRI.Infrastructure.Persistence.Context;
@@ -17,7 +18,7 @@ namespace PRI.Infrastructure.Persistence.Queries;
 public sealed class RevenueQueries(
     AppDbContext db,
     TimeProvider timeProvider,
-    IOptions<SeedSettings> seedOptions) : IRevenueQueries
+    IOptions<SeedSettings> seedOptions) : IRevenueQueries, ICashFlowOutlookQueries, IRevenueAnalyticsQueries
 {
     // MVP kararı: özet rakamlar yalnızca USD'dir; diğer para birimleri excludedPaymentCount ile bildirilir.
     private const string SummaryCurrency = "USD";
@@ -271,6 +272,85 @@ public sealed class RevenueQueries(
             x.Invoice.DataSource)).ToList();
 
         return new PagedResult<InvoiceDto>(items, query.Page, query.PageSize, total);
+    }
+
+    public async Task<CashFlowOutlookDto> GetOutlookAsync(CancellationToken cancellationToken)
+    {
+        var openStatuses = new[] { InvoiceStatus.Sent, InvoiceStatus.PaymentPending, InvoiceStatus.PartiallyPaid };
+        var payments = ReportablePayments();
+        var rows = await (
+            from invoice in ReportableInvoices().Where(invoice => openStatuses.Contains(invoice.Status))
+            join customer in db.Customers.AsNoTracking() on invoice.CustomerId equals (Guid?)customer.Id into joined
+            from customer in joined.DefaultIfEmpty()
+            select new
+            {
+                invoice.Id,
+                invoice.InvoiceNumber,
+                CustomerName = customer == null ? null : customer.Name,
+                invoice.Amount,
+                invoice.Currency,
+                invoice.Status,
+                invoice.DueDate,
+                invoice.DataSource,
+                PaidAmount = payments
+                    .Where(payment => payment.InvoiceId == invoice.Id
+                                     && payment.DataSource == invoice.DataSource
+                                     && payment.Currency == invoice.Currency
+                                     && payment.Status == PaymentStatus.Completed)
+                    .Sum(payment => (decimal?)payment.Amount) ?? 0m
+            }).ToListAsync(cancellationToken);
+
+        var facts = rows.Select(row => new CashFlowInvoiceFact(
+            row.Id,
+            row.InvoiceNumber,
+            row.CustomerName,
+            row.Amount,
+            row.PaidAmount,
+            row.Currency,
+            row.Status,
+            row.DueDate,
+            row.DataSource));
+
+        var todayUtc = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+        return CashFlowOutlookCalculator.Calculate(facts, todayUtc);
+    }
+
+    public async Task<RevenueAnalyticsDto> GetRevenueAnalyticsAsync(
+        DateTime fromUtc,
+        DateTime toUtc,
+        CancellationToken cancellationToken)
+    {
+        var todayUtc = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+        var currentMonth = new DateTime(todayUtc.Year, todayUtc.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var cohortStart = currentMonth.AddMonths(-6);
+        var factStart = new[] { fromUtc.AddDays(-28), cohortStart }.Min();
+
+        var payments = await ReportablePayments()
+            .Where(payment => payment.InitiatedAtUtc >= factStart && payment.InitiatedAtUtc < toUtc)
+            .Select(payment => new RevenueAnalyticsPaymentFact(
+                payment.CustomerId,
+                payment.Amount,
+                payment.Currency,
+                payment.Status,
+                payment.FailureCode,
+                payment.InitiatedAtUtc))
+            .ToListAsync(cancellationToken);
+
+        var firstPayments = await ReportablePayments()
+            .Where(payment => payment.Currency == SummaryCurrency && payment.Status == PaymentStatus.Completed)
+            .GroupBy(payment => payment.CustomerId)
+            .Select(group => new
+            {
+                CustomerId = group.Key,
+                FirstPaymentAtUtc = group.Min(payment => payment.InitiatedAtUtc)
+            })
+            .Where(payment => payment.FirstPaymentAtUtc >= cohortStart
+                              && payment.FirstPaymentAtUtc < currentMonth)
+            .Select(payment => new RevenueAnalyticsFirstPayment(payment.CustomerId, payment.FirstPaymentAtUtc))
+            .ToListAsync(cancellationToken);
+
+        var cashFlow = await GetOutlookAsync(cancellationToken);
+        return RevenueAnalyticsCalculator.Calculate(payments, firstPayments, cashFlow, fromUtc, toUtc, todayUtc);
     }
 
     // ---------- Customers ----------

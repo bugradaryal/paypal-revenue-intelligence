@@ -31,7 +31,7 @@ export function useSuggestionActions(onDecided?: (updated: RecoverySuggestion) =
                 ? t('recovery.toast.rejected')
                 : updated.executable
                   ? t('recovery.toast.approvedRunning')
-                  : t('recovery.toast.approved'),
+                  : t('recovery.toast.reviewed'),
           })
         },
         onError: (error) => {
@@ -47,7 +47,7 @@ export function useSuggestionActions(onDecided?: (updated: RecoverySuggestion) =
       open={confirming !== null}
       onClose={() => setConfirming(null)}
       title={t('recovery.confirm.title')}
-      description={confirming ? t('recovery.confirm.body', { customer: confirming.customerName }) : undefined}
+      description={confirming ? t('recovery.confirm.body', { customer: confirming.customerName ?? t('recovery.card.unknownCustomer') }) : undefined}
       footer={
         <>
           <Button variant="ghost" onClick={() => setConfirming(null)}>

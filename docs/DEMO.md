@@ -4,10 +4,13 @@
 ```
 cd frontend
 npm install
-cp .env.example .env     # VITE_DATA_SOURCE=mock is the default
+cp .env.example .env     # set VITE_AI_SOURCE=mock for a fully offline demo
 npm run dev
 ```
-Mock mode needs no backend and no login. A "Mock data" badge is always visible in the top bar.
+With `VITE_DATA_SOURCE=mock` and `VITE_AI_SOURCE=mock`, the demo needs no backend or login and uses
+predefined assistant responses. By default, mock business data is paired with live AI: start the backend,
+sign in, and set `VITE_AI_SOURCE=real` to ask questions grounded in the fictional demo dataset. Live AI
+responses may incur provider costs. The "Mock data" badge remains visible for demo business data.
 
 ## Suggested 5-minute walkthrough
 1. **Overview** – revenue, failed and pending payments, recovered revenue, trend chart (use "Table view" for the accessible version), recovery and AI usage cards. Switch 7 / 30 / 90 days.
@@ -22,12 +25,13 @@ Mock mode needs no backend and no login. A "Mock data" badge is always visible i
 Set in `frontend/.env`:
 ```
 VITE_DATA_SOURCE=real
+VITE_AI_SOURCE=real
 VITE_API_BASE_URL=http://localhost:5000
 ```
 Sign in at `/login` (demo user in `API_CONTRACT.md`). Only operations the contract marks Ready go to the backend (`READY` in `src/services/adapters/index.ts`); the rest stay on the mock adapter, and the badge stays visible while any do.
 To switch an operation over, add its key to `READY` once the contract marks it Ready.
 
 ## Known limits
-- AI Workspace streaming is mocked until contract 0.4 defines the SSE schema.
+- In demo-data mode, the AI Cost page remains demo data even when AI Workspace answers are live.
 - Settings request/response shapes are proposed; routing rules are not shown (no schema).
 - USD only, as in the contract's MVP.

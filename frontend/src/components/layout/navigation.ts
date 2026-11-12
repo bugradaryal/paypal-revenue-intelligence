@@ -1,7 +1,7 @@
-import { CreditCard, Gauge, HandCoins, LayoutDashboard, Settings, Sparkles, Users, type LucideIcon } from 'lucide-react'
+import { BellRing, CalendarClock, ChartNoAxesCombined, CreditCard, Gauge, LayoutDashboard, Settings, Sparkles, Users, Workflow, type LucideIcon } from 'lucide-react'
 import type { MessageKey } from '@/i18n'
 
-export type PageKey = 'overview' | 'payments' | 'recovery' | 'aiCost' | 'aiWorkspace' | 'users' | 'settings'
+export type PageKey = 'overview' | 'payments' | 'commandCenter' | 'cashFlow' | 'customerCohorts' | 'signals' | 'aiCost' | 'aiWorkspace' | 'users' | 'settings'
 
 export interface NavItem {
   page: PageKey
@@ -27,7 +27,10 @@ export const navSections: NavSection[] = [
     titleKey: 'nav.groupRevenue',
     items: [
       { page: 'payments', path: '/payments', labelKey: 'nav.payments', icon: CreditCard },
-      { page: 'recovery', path: '/recovery', labelKey: 'nav.recovery', icon: HandCoins },
+      { page: 'commandCenter', path: '/command-center', labelKey: 'nav.commandCenter', icon: Workflow },
+      { page: 'cashFlow', path: '/cash-flow', labelKey: 'nav.cashFlow', icon: CalendarClock },
+      { page: 'customerCohorts', path: '/cohorts', labelKey: 'nav.customerCohorts', icon: ChartNoAxesCombined },
+      { page: 'signals', path: '/signals', labelKey: 'nav.signals', icon: BellRing },
     ],
   },
   {

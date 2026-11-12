@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { env } from '@/config/env'
 import { api } from '@/services/adapters'
-import type { DateRange, DecideSuggestionRequest, PaymentQuery, SuggestionQuery } from '@/services/types'
+import type { DateRange, DecideSuggestionRequest, InsightQuery, IssueQuery, PaymentQuery, SuggestionQuery } from '@/services/types'
 
 function keepPreviousDataForSource<T>(previousData: T | undefined, previousQuery: { queryKey: readonly unknown[] } | undefined) {
   return previousQuery?.queryKey[1] === env.dataSource ? previousData : undefined
@@ -14,7 +14,12 @@ export const revenueKeys = {
   payment: (id: string) => [...revenueKeys.all, 'payment', id] as const,
   recovery: () => [...revenueKeys.all, 'recovery'] as const,
   recoverySummary: (range: DateRange) => [...revenueKeys.recovery(), 'summary', range] as const,
+  issues: (query: IssueQuery) => [...revenueKeys.recovery(), 'issues', query] as const,
   suggestions: (query: SuggestionQuery) => [...revenueKeys.recovery(), 'suggestions', query] as const,
+  cashFlow: () => [...revenueKeys.all, 'cash-flow-outlook'] as const,
+  analytics: (range: DateRange) => [...revenueKeys.all, 'analytics', range] as const,
+  insights: () => [...revenueKeys.all, 'insights'] as const,
+  insightList: (query: InsightQuery) => [...revenueKeys.insights(), query] as const,
 }
 
 export function useRevenueSummary(range: DateRange) {
@@ -43,11 +48,55 @@ export function usePayment(id: string | undefined) {
   })
 }
 
-export function useRecoverySummary(range: DateRange) {
+export function useRecoverySummary(range: DateRange, options: { refetchInterval?: number } = {}) {
   return useQuery({
     queryKey: revenueKeys.recoverySummary(range),
     queryFn: ({ signal }) => api.revenue.getRecoverySummary(range, { signal }),
     placeholderData: keepPreviousDataForSource,
+    refetchInterval: options.refetchInterval,
+  })
+}
+
+export function useIssues(query: IssueQuery, options: { refetchInterval?: number } = {}) {
+  return useQuery({
+    queryKey: revenueKeys.issues(query),
+    queryFn: ({ signal }) => api.revenue.listIssues(query, { signal }),
+    placeholderData: keepPreviousDataForSource,
+    refetchInterval: options.refetchInterval,
+  })
+}
+
+export function useCashFlowOutlook(options: { refetchInterval?: number } = {}) {
+  return useQuery({
+    queryKey: revenueKeys.cashFlow(),
+    queryFn: ({ signal }) => api.revenue.getCashFlowOutlook({ signal }),
+    placeholderData: keepPreviousDataForSource,
+    refetchInterval: options.refetchInterval,
+  })
+}
+
+export function useRevenueAnalytics(range: DateRange, options: { refetchInterval?: number } = {}) {
+  return useQuery({
+    queryKey: revenueKeys.analytics(range),
+    queryFn: ({ signal }) => api.revenue.getRevenueAnalytics(range, { signal }),
+    placeholderData: keepPreviousDataForSource,
+    refetchInterval: options.refetchInterval,
+  })
+}
+
+export function useRevenueInsights(query: InsightQuery) {
+  return useQuery({
+    queryKey: revenueKeys.insightList(query),
+    queryFn: ({ signal }) => api.revenue.listInsights(query, { signal }),
+  })
+}
+
+export function useGenerateRevenueInsight() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (days: number) => api.revenue.generateInsight(days),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: revenueKeys.insights() }),
   })
 }
 
@@ -55,18 +104,18 @@ export function useRecoverySummary(range: DateRange) {
 const EXECUTION_POLL_MS = 2500
 const EXECUTION_POLL_WINDOW_MS = 30_000
 
-export function useSuggestions(query: SuggestionQuery, options: { enabled?: boolean } = {}) {
+export function useSuggestions(query: SuggestionQuery, options: { enabled?: boolean; refetchInterval?: number } = {}) {
   return useQuery({
     enabled: options.enabled ?? true,
     queryKey: revenueKeys.suggestions(query),
     queryFn: ({ signal }) => api.revenue.listSuggestions(query, { signal }),
     placeholderData: keepPreviousDataForSource,
-    refetchInterval: (state) => {
-      const waiting = state.state.data?.items.some(
-        (s) => s.status === 'approved' && s.executable && Date.now() - Date.parse(s.updatedAt) < EXECUTION_POLL_WINDOW_MS,
-      )
-      return waiting ? EXECUTION_POLL_MS : false
-    },
+    refetchInterval: options.refetchInterval ?? ((state) => {
+        const waiting = state.state.data?.items.some(
+          (s) => s.status === 'approved' && s.executable && Date.now() - Date.parse(s.updatedAt) < EXECUTION_POLL_WINDOW_MS,
+        )
+        return waiting ? EXECUTION_POLL_MS : false
+      }),
   })
 }
 

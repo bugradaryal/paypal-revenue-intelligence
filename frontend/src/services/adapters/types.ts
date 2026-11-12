@@ -5,12 +5,15 @@ import type {
   AiModelInfo,
   AiUsageSummary,
   CacheStats,
+  CashFlowOutlook,
   ChatEvent,
   ChatRequest,
   ClearCacheResult,
   DateRange,
   DecideSuggestionRequest,
   GenerateSuggestionsResult,
+  InsightQuery,
+  IssueQuery,
   Page,
   PayPalConnection,
   PayPalTestConnectionResult,
@@ -21,6 +24,9 @@ import type {
   PaymentQuery,
   RecoverySuggestion,
   RecoverySummary,
+  RevenueAnalytics,
+  RevenueIssue,
+  RevenueInsight,
   RequestOptions,
   RevenueSummary,
   SuggestionQuery,
@@ -37,10 +43,16 @@ export interface RevenueApi {
   listPayments(query: PaymentQuery, options?: RequestOptions): Promise<Page<Payment>>
   getPayment(id: string, options?: RequestOptions): Promise<PaymentDetail>
   getRecoverySummary(range: DateRange, options?: RequestOptions): Promise<RecoverySummary>
+  getCashFlowOutlook(options?: RequestOptions): Promise<CashFlowOutlook>
+  getRevenueAnalytics(range: DateRange, options?: RequestOptions): Promise<RevenueAnalytics>
+  listIssues(query: IssueQuery, options?: RequestOptions): Promise<Page<RevenueIssue>>
   listSuggestions(query: SuggestionQuery, options?: RequestOptions): Promise<Page<RecoverySuggestion>>
   decideSuggestion(id: string, request: DecideSuggestionRequest, options?: RequestOptions): Promise<RecoverySuggestion>
   /** AI generation; can take up to 60 s. Never runs automatically. */
   generateSuggestions(options?: RequestOptions): Promise<GenerateSuggestionsResult>
+  listInsights(query: InsightQuery, options?: RequestOptions): Promise<Page<RevenueInsight>>
+  /** AI generation; can take up to 60 s. Never runs automatically. */
+  generateInsight(days: number, options?: RequestOptions): Promise<RevenueInsight>
 }
 
 export interface AiCostApi {

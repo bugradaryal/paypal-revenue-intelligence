@@ -31,7 +31,8 @@ Node 22.22 or newer (or 24 LTS) is recommended; older 22.x versions only print w
 | Variable | Meaning |
 |---|---|
 | `VITE_API_BASE_URL` | Backend address, for example `http://localhost:5000/api/v1`. The only place an API address may appear. |
-| `VITE_DATA_SOURCE` | `mock` (default): all data is sample data, no login. `real`: real login (JWT); operations marked Ready call the backend, all others still use sample data. |
+| `VITE_DATA_SOURCE` | `mock` (default): business data comes from the fictional local dataset. `real`: data operations use the backend. |
+| `VITE_AI_SOURCE` | `real` (default): AI Workspace calls the authenticated backend and requires login, even with mock business data. `mock`: predefined local assistant responses; no AI provider call. |
 
 ## Pages
 
@@ -69,7 +70,7 @@ This is the part that changes when the backend arrives.
 - `types/` holds the data shapes. They follow `docs/API_CONTRACT.md` (money is `{ amount: "decimal string", currency }`, pagination is `{ items, page, pageSize, totalItems }`, enums are snake_case, timestamps are UTC with `Z`).
 - `adapters/types.ts` defines the `Api` interface: the full list of operations the UI uses, grouped as `revenue`, `aiCost`, `settings`, `workspace`.
 - `adapters/mock/` is the sample-data implementation. `adapters/real/` calls the backend.
-- `adapters/index.ts` picks the data source. In real mode every operation in the `READY` set calls the backend; all others stay on mock.
+- `adapters/index.ts` composes the selected business-data adapter with the independently selected AI Workspace adapter. In mock-data/live-AI mode, a bounded fictional-data snapshot is passed as context; it is not sent to payment lookup endpoints.
 - `http.ts` sends every request with the JWT and the `Accept-Language` header (en/de/tr/es, so AI text comes back in the user's language), turns errors (RFC 9457, with a `code`) into readable messages, and on 401 signs the user out.
 
 ### Connecting an endpoint to the real backend
@@ -84,7 +85,7 @@ This is the part that changes when the backend arrives.
    | `settings` | `getBudget`, `setBudget`, `listModels`, `getCacheStats`, `clearCache` |
    | `workspace` | `streamChat` |
 
-3. Set `VITE_DATA_SOURCE=real`, start the backend, sign in at `/login`, and check the screen.
+3. Set `VITE_DATA_SOURCE=real` and `VITE_AI_SOURCE=real`, start the backend, sign in at `/login`, and check the screen. To use live AI with fictional business data instead, keep `VITE_DATA_SOURCE=mock` and set `VITE_AI_SOURCE=real`.
 4. If the response differs from the contract, fix it in `adapters/real/index.ts` or `types/` (or report it to the backend). Do not change the screens.
 
 The "Mock data" badge disappears by itself once no operation is left on mock.
@@ -92,7 +93,7 @@ The "Mock data" badge disappears by itself once no operation is left on mock.
 ## Where the data is still mock
 
 - All data operations stay on mock until the contract marks them Ready (today only health, ping and auth are live).
-- AI Workspace streaming: the exact event format is defined only in contract 0.4. The real adapter throws until then.
+- With `VITE_DATA_SOURCE=mock`, the AI Cost page remains fictional even when AI Workspace calls the live backend; only the per-answer receipt reflects the real completion.
 - Settings: request and response shapes are proposed (`types/settings.ts`), because the contract lists the endpoints without schemas.
 - Routing rules are intentionally not shown. Their schema is undefined, and the UI must not show a setting the backend cannot store.
 

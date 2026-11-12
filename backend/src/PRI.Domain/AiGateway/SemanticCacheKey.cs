@@ -13,7 +13,7 @@ namespace PRI.Domain.AiGateway;
 public static partial class SemanticCacheKey
 {
     public static string NormalizeQuery(string text) =>
-        WhitespaceRun().Replace(text.Trim(), " ").ToLowerInvariant();
+        WhitespaceRun().Replace(text.Trim().Replace('\u0130', 'i').ToLowerInvariant(), " ");
 
     public static string ComputeQueryHash(string normalizedQuery) => Sha256(normalizedQuery);
 

@@ -1,5 +1,6 @@
 export * from './common'
 export * from './revenue'
+export * from './insights'
 export * from './ai-cost'
 export * from './auth'
 export * from './settings'

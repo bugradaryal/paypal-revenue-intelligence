@@ -29,9 +29,15 @@ This keeps automation useful without removing human oversight.
 ## What the product includes
 
 - **Revenue overview:** revenue, failed and pending payments, recovered revenue, and daily trends.
+- **AI Revenue Brief:** server-calculated payment metrics, failure patterns, previous-period comparisons, and validated AI commentary with a rule-based fallback.
 - **Payment investigation:** searchable and filterable payment records with status history and failure details.
-- **Recovery workspace:** AI-assisted recommendations, expected recovery values, and explicit approve/reject
-  controls. Executable reminders require confirmation before they are sent.
+- **Recovery Command Center:** the single recovery workspace for open issues, AI-assisted proposals, review and execution states, errors, and recovery evidence from refreshed source records.
+  Advice-only recommendations can be marked reviewed; only eligible PayPal invoice reminders can be explicitly confirmed and sent.
+- **Cash Flow Outlook:** invoice-backed open balances, partial payments, overdue aging, a 13-week USD due-date schedule, and separate original-currency exposure.
+- **Payment outcome breakdown:** an Overview widget separates completed, failed, pending, and refunded USD activity without presenting failed attempts as proven lost revenue.
+- **Payment failure intelligence:** Payments includes selected-period failure trends and reason totals; counts cover all currencies while amounts are USD-only.
+- **Customer Cohorts:** a distinct view groups customers by first successful USD payment month and shows subsequent payment activity and revenue per cohort customer.
+- **Revenue Signals:** a live attention queue for overdue and soon-due invoices, unresolved recovery issues, pending reviews, failed actions, foreign-currency exposure, and rule-based anomalies. It refreshes while open; it is not a persisted notification system.
 - **AI cost intelligence:** token usage, provider/model breakdowns, cache hit rate, daily cost trends, and a
   configurable monthly budget.
 - **AI workspace:** a conversational interface for exploring payment and cost questions, with model and cost
@@ -45,19 +51,26 @@ This keeps automation useful without removing human oversight.
 
 For a concise demonstration:
 
-1. Open **Overview** to introduce the revenue picture and recent trends.
+1. Open **Overview**, select a time range, and generate the AI Revenue Brief to show grounded metrics, failure patterns, and the previous-period comparison.
 2. Go to **Payments** and inspect a failed payment, its reason, and status history.
-3. Open **Recovery** to review suggestions. Show that an action requires an explicit approval.
-4. Visit **AI Cost** to compare spend, token usage, cache performance, and models.
-5. Ask a question in **AI Workspace** and point out the model and cost details on the response.
-6. Finish in **Settings** with language, theme, budget, and PayPal connection options.
+3. Open **Recovery Command Center** to separate open source-record issues from proposed actions, review a suggestion, and see whether later PayPal sync data confirms recovery.
+4. Visit **Cash Flow Outlook** to show partial-payment balances, overdue aging, upcoming invoice due dates, and non-USD balances kept in their original currencies.
+5. On **Overview**, inspect the payment outcome breakdown; in **Payments**, compare failure reasons over the selected period.
+6. Open **Customer Cohorts** for first-payment retention patterns, then **Revenue Signals** for anomalies and an attention queue linking urgent items to their operational pages.
+7. Visit **AI Cost** to compare spend, token usage, cache performance, and models.
+8. Ask a question in **AI Workspace** and point out the model and cost details on the response.
+9. Finish in **Settings** with language, theme, budget, and PayPal connection options.
 
 ## Run the presentation build
 
-The frontend can be presented with its bundled local dataset; a PayPal account, API key, or backend is not
-required for this mode. The interface intentionally stays focused on the product rather than displaying a
-data-source badge. The README documents the demo mode so that its figures are not mistaken for verified
-business results.
+The frontend can be presented with its bundled fictional dataset; a PayPal account, API key, or backend is not
+required for this mode. The Overview, Recovery Command Center, Cash Flow Outlook, Customer Cohorts, and Revenue Signals pages label
+demo analysis and records. Payment outcome analysis surfaces exposure rather than claiming failed attempts are
+lost revenue; cohort activity is not subscription churn, and cancellations are not inferred from transaction data. Cash-flow examples are
+fictional; live USD balances are calculated by the backend from
+open invoices less linked completed payments. Other currencies are displayed separately without an assumed
+exchange rate. Demo recommendations can be reviewed locally but never call PayPal or simulate a successful
+external action. These figures are not verified business results.
 
 Requirements: a Node.js version supported by Vite 8 and npm.
 
@@ -72,10 +85,13 @@ Open `http://localhost:5173`. The default data source is the local demo adapter.
 
 ```env
 VITE_DATA_SOURCE=mock
+VITE_AI_SOURCE=real
 ```
 
-Restart the development server after changing environment variables. Demo interactions are local to the
-frontend; they do not charge a customer or send a real PayPal reminder.
+The default keeps business data fictional while using the authenticated backend for live AI responses.
+Start the backend and sign in to use AI; each answer can incur provider costs. To run a fully offline demo
+with predefined assistant responses, set `VITE_AI_SOURCE=mock` instead. Restart the development server
+after changing environment variables. Demo interactions never charge a customer or send a real PayPal reminder.
 
 ## Connect a backend or PayPal Sandbox
 
@@ -88,6 +104,7 @@ To point the frontend at the API, set the following in `frontend/.env` and resta
 
 ```env
 VITE_DATA_SOURCE=real
+VITE_AI_SOURCE=real
 VITE_API_BASE_URL=http://localhost:5000/api/v1
 ```
 
