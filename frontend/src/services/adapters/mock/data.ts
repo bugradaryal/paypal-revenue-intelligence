@@ -389,6 +389,7 @@ const ROUTING_SAVING_RATIO = 0.1 // fictional
 export function buildModelCatalog(): AiModelInfo[] {
   return MODELS.map((m) => ({
     key: m.key,
+    modelId: m.key,
     label: m.key,
     provider: PROVIDER_LABEL[m.provider],
     inputPricePerMillionTokens: { amount: m.inPerM.toFixed(2), currency: CURRENCY },

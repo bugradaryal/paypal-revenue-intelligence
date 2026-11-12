@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { MessageSquarePlus, Sparkles } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { Button } from '@/components/ui'
+import { Button, Select } from '@/components/ui'
+import { useModelCatalog } from '@/features/settings/queries'
 import { ApprovalBanner } from '@/components/patterns'
 import { useSuggestionActions } from '@/features/recovery/useSuggestionActions'
 import { useSuggestions } from '@/features/revenue/queries'
@@ -10,13 +11,17 @@ import { MessageBubble } from '@/features/workspace/MessageBubble'
 import { useWorkspaceChat } from '@/features/workspace/useWorkspaceChat'
 import { useI18n } from '@/i18n'
 import { useFormat } from '@/i18n/useFormat'
+import { useErrorMessage } from '@/i18n/useErrorMessage'
+import { env } from '@/config/env'
 
 const STARTERS = ['failures', 'recovery', 'cost', 'help'] as const
 
 export function AiWorkspacePage() {
   const { t } = useI18n()
+  const errorMessage = useErrorMessage()
   const f = useFormat()
   const chat = useWorkspaceChat()
+  const modelCatalog = useModelCatalog()
   const actions = useSuggestionActions(chat.syncSuggestion)
   const bottomRef = useRef<HTMLDivElement>(null)
   const followingLatest = useRef(true)
@@ -116,6 +121,28 @@ export function AiWorkspacePage() {
         </div>
 
         <div className="sticky bottom-4 z-10">
+          {!env.isMock && (
+            <div className="mb-2 flex flex-wrap items-center gap-3">
+              <label htmlFor="workspace-model" className="text-xs font-medium text-ink-soft">
+                {t('workspace.modelLabel')}
+              </label>
+              <Select
+                id="workspace-model"
+                aria-label={t('workspace.modelLabel')}
+                className="h-9 min-w-48 bg-surface-card text-xs"
+                value={chat.model}
+                onChange={(event) => chat.setModel(event.target.value)}
+                options={[
+                  { value: 'auto', label: t('workspace.modelAuto') },
+                  ...(modelCatalog.data ?? []).map((model) => ({
+                    value: model.modelId,
+                    label: `${model.label} · ${model.provider}`,
+                  })),
+                ]}
+              />
+              {modelCatalog.isError && <p role="status" className="text-xs text-danger">{errorMessage(modelCatalog.error)}</p>}
+            </div>
+          )}
           <Composer streaming={chat.streaming} onSend={chat.send} onStop={chat.stop} />
         </div>
       </div>

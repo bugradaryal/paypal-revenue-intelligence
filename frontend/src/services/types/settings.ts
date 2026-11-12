@@ -17,6 +17,7 @@ export interface UpdateBudgetRequest {
 /** Read-only catalog entry. */
 export interface AiModelInfo {
   key: string
+  modelId: string
   label: string
   provider: string
   inputPricePerMillionTokens: Money

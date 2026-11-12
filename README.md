@@ -96,6 +96,37 @@ stored encrypted by the backend. A successful OAuth test confirms API authentica
 depends on the Sandbox app's permissions. Webhook setup is optional for manual synchronization. For deployment
 and endpoint details, see the [API contract](./docs/API_CONTRACT.md).
 
+## AI providers and model selection
+
+The gateway currently supports OpenAI and Google Gemini. For local Gemini access, add the key to
+`backend/src/PRI.Api/appsettings.Development.json` (this file is local-only and must not be committed):
+
+```json
+{
+  "Gemini": {
+    "ApiKey": "YOUR_GEMINI_API_KEY"
+  }
+}
+```
+
+Alternatively, store it with .NET User Secrets:
+
+```powershell
+dotnet user-secrets set "Gemini:ApiKey" "<YOUR_GEMINI_API_KEY>" --project backend/src/PRI.Api
+```
+
+The model catalog seeds `gemini-3.8-flash`. In **AI Workspace**, choose **Automatic (routing rules)** or select
+a model explicitly. Automatic selection is deterministic, not another AI call: the backend looks for a rule
+matching the task type, then the default rule. Today the default and classification/summarization rules use
+OpenAI GPT-6 Luna with GPT-6.1 Terra as fallback; analysis uses GPT-6.1 Terra with GPT-6.1 Sol as fallback.
+Gemini is available as an explicit choice and does not silently replace the existing OpenAI default. A pinned
+model is used on its own; automatic rules can try the next configured model for transient provider outages or
+rate limits. The response reports which provider/model actually answered.
+
+The AI Cost page calculates Gemini estimates from Google's published paid-tier token prices stored in the
+catalog; actual billing can differ by account tier and usage. Review current [Gemini API pricing](https://ai.google.dev/gemini-api/docs/pricing)
+before relying on cost estimates.
+
 ## Architecture
 
 ```text

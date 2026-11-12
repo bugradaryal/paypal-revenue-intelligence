@@ -10,6 +10,7 @@ export interface ChatMessageInput {
 
 export interface ChatRequest {
   messages: ChatMessageInput[]
+  model?: string
 }
 
 export interface ChatUsage {

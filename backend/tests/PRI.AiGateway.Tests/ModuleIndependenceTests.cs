@@ -1,6 +1,7 @@
 using NetArchTest.Rules;
 using PRI.Application.AiGateway.Interfaces;
 using PRI.Domain.AiGateway.Enums;
+using PRI.Infrastructure.AiGateway.Providers.Gemini;
 using PRI.Infrastructure.AiGateway.Providers.OpenAi;
 
 namespace PRI.AiGateway.Tests;
@@ -19,6 +20,7 @@ public class ModuleIndependenceTests
     [InlineData(typeof(AiProvider), "PRI.Domain.AiGateway")]
     [InlineData(typeof(IAiProvider), "PRI.Application.AiGateway")]
     [InlineData(typeof(OpenAiProvider), "PRI.Infrastructure.AiGateway")]
+    [InlineData(typeof(GeminiProvider), "PRI.Infrastructure.AiGateway")]
     public void Gateway_code_does_not_depend_on_the_revenue_module(Type anchorType, string gatewayNamespace)
     {
         var result = Types.InAssembly(anchorType.Assembly)

@@ -149,6 +149,8 @@ export const de: Messages = {
   },
   workspace: {
     newConversation: 'Neues Gespräch',
+    modelLabel: 'KI-Modell',
+    modelAuto: 'Automatisch (Routing-Regeln)',
     logLabel: 'Gespräch',
     inputLabel: 'Nachricht an den Assistenten',
     placeholder: 'Stelle eine Frage…',

@@ -149,6 +149,8 @@ export const tr: Messages = {
   },
   workspace: {
     newConversation: 'Yeni konuşma',
+    modelLabel: 'AI modeli',
+    modelAuto: 'Otomatik (yönlendirme kuralları)',
     logLabel: 'Konuşma',
     inputLabel: 'Asistana mesaj',
     placeholder: 'Bir soru sor…',

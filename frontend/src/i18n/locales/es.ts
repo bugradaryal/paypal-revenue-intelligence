@@ -149,6 +149,8 @@ export const es: Messages = {
   },
   workspace: {
     newConversation: 'Nueva conversación',
+    modelLabel: 'Modelo de IA',
+    modelAuto: 'Automático (reglas de enrutamiento)',
     logLabel: 'Conversación',
     inputLabel: 'Mensaje al asistente',
     placeholder: 'Haz una pregunta…',

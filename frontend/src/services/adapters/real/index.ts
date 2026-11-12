@@ -137,6 +137,7 @@ function toModelInfo(model: ProviderModelResponse): AiModelInfo {
 
   return {
     key: model.id,
+    modelId: model.modelId,
     label: model.displayName,
     provider: model.provider,
     inputPricePerMillionTokens: model.inputPricePerMillion,
@@ -256,7 +257,7 @@ export const realApi: Api = {
       const paymentContext = await findPaymentContext(latestQuestion, options?.signal)
       const response = await http.post<CompletionResponse>('gateway/completions', {
         body: {
-          model: 'auto',
+          model: request.model ?? 'auto',
           taskType: 'default',
           messages: [
             {

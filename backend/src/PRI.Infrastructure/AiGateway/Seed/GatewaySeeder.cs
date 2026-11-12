@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PRI.Domain.AiGateway.Entities;
 using PRI.Domain.AiGateway.Enums;
+using PRI.Infrastructure.AiGateway.Providers.Gemini;
 using PRI.Infrastructure.Persistence.Context;
 
 namespace PRI.Infrastructure.AiGateway.Seed;
@@ -14,7 +15,9 @@ namespace PRI.Infrastructure.AiGateway.Seed;
 public sealed class GatewaySeeder(AppDbContext db, TimeProvider timeProvider)
 {
     private const string OpenAiPricingUrl = "https://developers.openai.com/api/docs/pricing";
-    private static readonly DateOnly PricingCheckedOn = new(2026, 11, 7);
+    private const string GeminiPricingUrl = "https://ai.google.dev/gemini-api/docs/pricing#gemini-3.8-flash";
+    private static readonly DateOnly OpenAiPricingCheckedOn = new(2026, 11, 7);
+    private static readonly DateOnly GeminiPricingCheckedOn = new(2026, 11, 12);
 
     private const string Luna = "gpt-6-luna";
     private const string Terra = "gpt-6.1-terra";
@@ -23,6 +26,7 @@ public sealed class GatewaySeeder(AppDbContext db, TimeProvider timeProvider)
 
     // Tasarruf hesabının baz modeli: orta fiyatlı Standard model. Bilerek muhafazakâr seçildi (en pahalı model değil).
     private const string BaselineModelId = Terra;
+    private const string GeminiFlash = "gemini-3.8-flash";
 
     // (model id, görünen ad, katman, girdi, önbellekli girdi, çıktı) — USD / 1M token
     private static readonly (string ModelId, string Name, ModelTier Tier, decimal Input, decimal Cached, decimal Output)[] OpenAiModels =
@@ -31,6 +35,11 @@ public sealed class GatewaySeeder(AppDbContext db, TimeProvider timeProvider)
         (Terra, "GPT-6.1 Terra", ModelTier.Standard, 1.00m, 0.05m, 5.00m),
         (Sol, "GPT-6.1 Sol", ModelTier.Premium, 2.00m, 0.10m, 10.00m),
         (Astra, "GPT-6 Astra", ModelTier.Premium, 10.00m, 1.00m, 50.00m)
+    ];
+
+    private static readonly (string ModelId, string Name, ModelTier Tier, decimal Input, decimal Output)[] GeminiModels =
+    [
+        (GeminiFlash, "Gemini 3.8 Flash", ModelTier.Standard, 0.75m, 3.75m)
     ];
 
     // Varsayılan yönlendirme kuralları (görev tipi, ana model, yedekler). Yalnızca yapılandırmadır; kalite iddiası içermez.
@@ -47,7 +56,9 @@ public sealed class GatewaySeeder(AppDbContext db, TimeProvider timeProvider)
         var now = timeProvider.GetUtcNow().UtcDateTime;
 
         var unsupportedModels = await db.ProviderModels
-            .Where(m => m.Provider != AiProvider.Openai && (m.IsEnabled || m.IsBaseline))
+            .Where(m => m.Provider != AiProvider.Openai
+                        && m.Provider != AiProvider.Gemini
+                        && (m.IsEnabled || m.IsBaseline))
             .ToListAsync(cancellationToken);
         foreach (var model in unsupportedModels)
         {
@@ -69,7 +80,19 @@ public sealed class GatewaySeeder(AppDbContext db, TimeProvider timeProvider)
         {
             db.ProviderModels.Add(ProviderModel.Create(
                 AiProvider.Openai, seed.ModelId, seed.Name, seed.Tier,
-                seed.Input, seed.Cached, seed.Output, OpenAiPricingUrl, PricingCheckedOn, now));
+                seed.Input, seed.Cached, seed.Output, OpenAiPricingUrl, OpenAiPricingCheckedOn, now));
+        }
+
+        var existingGeminiIds = await db.ProviderModels
+            .Where(m => m.Provider == AiProvider.Gemini)
+            .Select(m => m.ModelId)
+            .ToListAsync(cancellationToken);
+
+        foreach (var seed in GeminiModels.Where(m => !existingGeminiIds.Contains(m.ModelId)))
+        {
+            db.ProviderModels.Add(ProviderModel.Create(
+                AiProvider.Gemini, seed.ModelId, seed.Name, seed.Tier,
+                seed.Input, null, seed.Output, GeminiPricingUrl, GeminiPricingCheckedOn, now));
         }
 
         await db.SaveChangesAsync(cancellationToken);

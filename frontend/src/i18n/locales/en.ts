@@ -153,6 +153,8 @@ export const en = {
   },
   workspace: {
     newConversation: 'New conversation',
+    modelLabel: 'AI model',
+    modelAuto: 'Automatic (routing rules)',
     logLabel: 'Conversation',
     inputLabel: 'Message to the assistant',
     placeholder: 'Ask a question…',

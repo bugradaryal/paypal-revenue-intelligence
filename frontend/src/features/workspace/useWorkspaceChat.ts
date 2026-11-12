@@ -42,6 +42,7 @@ export function useWorkspaceChat() {
   const { t, tryT } = useI18n()
   const errorMessage = useErrorMessage()
   const [turns, setTurns] = useState<ChatTurn[]>(load)
+  const [model, setModel] = useState('auto')
   const turnsRef = useRef(turns)
   const abortRef = useRef<AbortController | null>(null)
 
@@ -61,7 +62,7 @@ export function useWorkspaceChat() {
   }, [])
 
   const run = useCallback(
-    async (history: ChatTurn[], assistantId: string) => {
+    async (history: ChatTurn[], assistantId: string, selectedModel: string) => {
       const controller = new AbortController()
       abortRef.current = controller
 
@@ -85,7 +86,7 @@ export function useWorkspaceChat() {
           .filter((turn) => turn.content && turn.status !== 'error')
           .map((turn) => ({ role: turn.role, content: turn.content }))
 
-        for await (const event of api.workspace.streamChat({ messages }, { signal: controller.signal })) apply(event)
+        for await (const event of api.workspace.streamChat({ messages, model: selectedModel }, { signal: controller.signal })) apply(event)
         // A stream that ends without "done" still ends the turn.
         patch(assistantId, (turn) => (turn.status === 'streaming' ? { ...turn, status: 'done' } : turn))
       } catch (error) {
@@ -106,9 +107,9 @@ export function useWorkspaceChat() {
       const assistant: ChatTurn = { id: newId(), role: 'assistant', content: '', status: 'streaming', suggestions: [] }
       const history = [...turnsRef.current, user]
       setTurns([...history, assistant])
-      void run(history, assistant.id)
+      void run(history, assistant.id, model)
     },
-    [run],
+    [model, run],
   )
 
   /** Asks the same question again, replacing the last answer. */
@@ -120,8 +121,8 @@ export function useWorkspaceChat() {
     const history = current.slice(0, -1)
     const assistant: ChatTurn = { id: newId(), role: 'assistant', content: '', status: 'streaming', suggestions: [] }
     setTurns([...history, assistant])
-    void run(history, assistant.id)
-  }, [run])
+    void run(history, assistant.id, model)
+  }, [model, run])
 
   const stop = useCallback(() => abortRef.current?.abort(), [])
 
@@ -141,5 +142,5 @@ export function useWorkspaceChat() {
     )
   }, [])
 
-  return { turns, streaming, send, stop, regenerate, reset, syncSuggestion }
+  return { turns, streaming, model, setModel, send, stop, regenerate, reset, syncSuggestion }
 }

@@ -12,6 +12,7 @@ using PRI.Domain.Common.Interfaces;
 using PRI.Domain.Revenue.Interfaces;
 using PRI.Infrastructure.Persistence;
 using PRI.Infrastructure.Persistence.Queries;
+using PRI.Infrastructure.AiGateway.Providers.Gemini;
 using PRI.Infrastructure.AiGateway.Providers.OpenAi;
 using PRI.Infrastructure.AiGateway.Seed;
 using PRI.Infrastructure.Auth;
@@ -42,6 +43,7 @@ public static class DependencyInjection
         services.Configure<SeedSettings>(configuration.GetSection(SeedSettings.SectionName));
         services.Configure<PayPalSettings>(configuration.GetSection(PayPalSettings.SectionName));
         services.Configure<OpenAiSettings>(configuration.GetSection(OpenAiSettings.SectionName));
+        services.Configure<GeminiSettings>(configuration.GetSection(GeminiSettings.SectionName));
         var dataProtection = services.AddDataProtection();
         var keyRingPath = configuration["DataProtection:KeyRingPath"];
         if (!string.IsNullOrWhiteSpace(keyRingPath))
@@ -100,6 +102,12 @@ public static class DependencyInjection
         {
             client.BaseAddress = new Uri(OpenAiSettings.DefaultBaseUrl);
             client.Timeout = TimeSpan.FromSeconds(55);   // API sözleşmesi: AI uçları için istemci timeout'u 60 sn
+        });
+
+        services.AddHttpClient<IAiProvider, GeminiProvider>(client =>
+        {
+            client.BaseAddress = new Uri(GeminiSettings.DefaultBaseUrl);
+            client.Timeout = TimeSpan.FromSeconds(55);
         });
 
         services.AddHttpClient<IEmbeddingProvider, OpenAiEmbeddingProvider>((serviceProvider, client) =>
