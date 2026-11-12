@@ -1,5 +1,6 @@
 using PRI.Application.AiGateway.Interfaces;
 using PRI.Domain.AiGateway.Entities;
+using PRI.Domain.AiGateway.Enums;
 using PRI.Domain.AiGateway.Interfaces;
 using PRI.Shared.Exceptions;
 
@@ -44,17 +45,90 @@ public sealed class ModelRouter(IProviderModelRepository models, IRoutingRuleRep
                     plan.Add(model);
                 }
             }
+
+            if (plan.Count > 0)
+            {
+                var ordered = plan
+                    .OrderByDescending(m => ScoreModelForTask(m, normalizedTaskType))
+                    .ThenBy(m => m.OutputPricePerMillionUsd)
+                    .ThenBy(m => m.InputPricePerMillionUsd)
+                    .ToList();
+
+                return new RoutePlan(ordered, "auto", normalizedTaskType, rule.TaskType);
+            }
         }
 
-        if (plan.Count == 0)
+        var heuristic = enabled
+            .OrderByDescending(m => ScoreModelForTask(m, normalizedTaskType))
+            .ThenBy(m => m.OutputPricePerMillionUsd)
+            .ThenBy(m => m.InputPricePerMillionUsd)
+            .ToList();
+
+        if (heuristic.Count == 0)
         {
-            var cheapest = enabled.OrderBy(m => m.OutputPricePerMillionUsd).ThenBy(m => m.InputPricePerMillionUsd).FirstOrDefault()
-                ?? throw new BusinessRuleException("no_enabled_models", "No AI model is enabled in the catalog.");
-
-            plan.Add(cheapest);
-            return new RoutePlan(plan, "auto", normalizedTaskType, null);
+            throw new BusinessRuleException("no_enabled_models", "No AI model is enabled in the catalog.");
         }
 
-        return new RoutePlan(plan, "auto", normalizedTaskType, rule!.TaskType);
+        var top = heuristic.Take(2).ToList();
+        return new RoutePlan(top, "auto", normalizedTaskType, null);
+    }
+
+    private static int ScoreModelForTask(ProviderModel model, string? taskType)
+    {
+        var profile = ClassifyTask(taskType);
+
+        return profile switch
+        {
+            TaskProfile.Simple => model.Tier switch
+            {
+                ModelTier.Economy => 90,
+                ModelTier.Standard => 70,
+                ModelTier.Premium => 40,
+                _ => 10
+            },
+            TaskProfile.Complex => model.Tier switch
+            {
+                ModelTier.Economy => 25,
+                ModelTier.Standard => 90,
+                ModelTier.Premium => 80,
+                _ => 10
+            },
+            _ => model.Tier switch
+            {
+                ModelTier.Standard => 80,
+                ModelTier.Economy => 75,
+                ModelTier.Premium => 60,
+                _ => 10
+            }
+        };
+    }
+
+    private static TaskProfile ClassifyTask(string? taskType)
+    {
+        if (string.IsNullOrWhiteSpace(taskType))
+        {
+            return TaskProfile.Balanced;
+        }
+
+        var normalized = taskType.Trim().ToLowerInvariant();
+
+        if (normalized.Contains("analysis") || normalized.Contains("reason") || normalized.Contains("compare") || normalized.Contains("audit") || normalized.Contains("plan") || normalized.Contains("debug") || normalized.Contains("investig") || normalized.Contains("root") || normalized.Contains("risk"))
+        {
+            return TaskProfile.Complex;
+        }
+
+        if (normalized.Contains("summary") || normalized.Contains("summar") || normalized.Contains("class") || normalized.Contains("label") || normalized.Contains("extract") || normalized.Contains("translate") || normalized.Contains("rewrite") || normalized.Contains("detect"))
+        {
+            return TaskProfile.Simple;
+        }
+
+        return TaskProfile.Balanced;
+    }
+
+    private enum TaskProfile
+    {
+        Simple,
+        Balanced,
+        Complex
     }
 }

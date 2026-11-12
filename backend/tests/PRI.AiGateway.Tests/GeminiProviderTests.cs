@@ -45,7 +45,7 @@ public sealed class GeminiProviderTests
 
         var result = await provider.CompleteAsync(
             new ProviderCompletionRequest(
-                "gemini-3.8-flash",
+                "gemini-3.5-flash-lite",
                 [
                     new ProviderMessage("system", "Be concise."),
                     new ProviderMessage("user", "Hi"),
@@ -58,7 +58,7 @@ public sealed class GeminiProviderTests
             CancellationToken.None);
 
         Assert.Equal(AiProvider.Gemini, provider.Provider);
-        Assert.Equal("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent", capturedUri);
+        Assert.Equal("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent", capturedUri);
         Assert.Equal("test-key", capturedApiKey);
         using var requestBody = JsonDocument.Parse(capturedBody!);
         Assert.Equal("Be concise.", requestBody.RootElement.GetProperty("systemInstruction").GetProperty("parts")[0].GetProperty("text").GetString());
@@ -83,7 +83,7 @@ public sealed class GeminiProviderTests
 
         var error = await Assert.ThrowsAsync<ExternalServiceException>(() =>
             provider.CompleteAsync(
-                new ProviderCompletionRequest("gemini-3.8-flash", [new ProviderMessage("user", "Hi")], null, null, null),
+                new ProviderCompletionRequest("gemini-3.5-flash-lite", [new ProviderMessage("user", "Hi")], null, null, null),
                 CancellationToken.None));
 
         Assert.Equal("provider_rate_limited", error.Code);
@@ -99,7 +99,7 @@ public sealed class GeminiProviderTests
 
         var error = await Assert.ThrowsAsync<BusinessRuleException>(() =>
             provider.CompleteAsync(
-                new ProviderCompletionRequest("gemini-3.8-flash", [new ProviderMessage("user", "Hi")], null, null, null),
+                new ProviderCompletionRequest("gemini-3.5-flash-lite", [new ProviderMessage("user", "Hi")], null, null, null),
                 CancellationToken.None));
 
         Assert.Equal("gemini_not_configured", error.Code);

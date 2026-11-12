@@ -15,7 +15,7 @@ namespace PRI.Infrastructure.AiGateway.Seed;
 public sealed class GatewaySeeder(AppDbContext db, TimeProvider timeProvider)
 {
     private const string OpenAiPricingUrl = "https://developers.openai.com/api/docs/pricing";
-    private const string GeminiPricingUrl = "https://ai.google.dev/gemini-api/docs/pricing#gemini-3.8-flash";
+    private const string GeminiPricingUrl = "https://ai.google.dev/gemini-api/docs/pricing#gemini-3.5-flash-lite";
     private static readonly DateOnly OpenAiPricingCheckedOn = new(2026, 11, 7);
     private static readonly DateOnly GeminiPricingCheckedOn = new(2026, 11, 12);
 
@@ -26,7 +26,7 @@ public sealed class GatewaySeeder(AppDbContext db, TimeProvider timeProvider)
 
     // Tasarruf hesabının baz modeli: orta fiyatlı Standard model. Bilerek muhafazakâr seçildi (en pahalı model değil).
     private const string BaselineModelId = Terra;
-    private const string GeminiFlash = "gemini-3.8-flash";
+    private const string GeminiFlashLite = "gemini-3.5-flash-lite";
 
     // (model id, görünen ad, katman, girdi, önbellekli girdi, çıktı) — USD / 1M token
     private static readonly (string ModelId, string Name, ModelTier Tier, decimal Input, decimal Cached, decimal Output)[] OpenAiModels =
@@ -39,7 +39,7 @@ public sealed class GatewaySeeder(AppDbContext db, TimeProvider timeProvider)
 
     private static readonly (string ModelId, string Name, ModelTier Tier, decimal Input, decimal Output)[] GeminiModels =
     [
-        (GeminiFlash, "Gemini 3.8 Flash", ModelTier.Standard, 0.75m, 3.75m)
+        (GeminiFlashLite, "Gemini 3.5 Flash Lite", ModelTier.Standard, 0.75m, 3.75m)
     ];
 
     // Varsayılan yönlendirme kuralları (görev tipi, ana model, yedekler). Yalnızca yapılandırmadır; kalite iddiası içermez.

@@ -91,12 +91,15 @@ public class ModelRouterTests
     }
 
     [Fact]
-    public async Task Without_any_rule_the_cheapest_enabled_model_is_used()
+    public async Task Without_any_rule_the_router_uses_the_request_profile_instead_of_just_the_cheapest_model()
     {
-        var plan = await CreateRouter(rules: []).BuildPlanAsync("auto", null, CancellationToken.None);
+        var simple = await CreateRouter(rules: []).BuildPlanAsync("auto", "summarization", CancellationToken.None);
+        var complex = await CreateRouter(rules: []).BuildPlanAsync("auto", "analysis", CancellationToken.None);
 
-        Assert.Equal(new[] { "gpt-6-luna" }, plan.Models.Select(m => m.ModelId));
-        Assert.Null(plan.Rule);
+        Assert.Equal(new[] { "gpt-6-luna", "gpt-6.1-terra" }, simple.Models.Select(m => m.ModelId));
+        Assert.Equal(new[] { "gpt-6.1-terra", "gpt-6.1-sol" }, complex.Models.Select(m => m.ModelId));
+        Assert.Null(simple.Rule);
+        Assert.Null(complex.Rule);
     }
 
     [Fact]

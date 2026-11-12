@@ -115,7 +115,7 @@ Alternatively, store it with .NET User Secrets:
 dotnet user-secrets set "Gemini:ApiKey" "<YOUR_GEMINI_API_KEY>" --project backend/src/PRI.Api
 ```
 
-The model catalog seeds `gemini-3.8-flash`. In **AI Workspace**, choose **Automatic (routing rules)** or select
+The model catalog seeds `gemini-3.5-flash-lite`. In **AI Workspace**, the system stays on **Automatic (routing rules)** and lets the backend choose the best model automatically.
 a model explicitly. Automatic selection is deterministic, not another AI call: the backend looks for a rule
 matching the task type, then the default rule. Today the default and classification/summarization rules use
 OpenAI GPT-6 Luna with GPT-6.1 Terra as fallback; analysis uses GPT-6.1 Terra with GPT-6.1 Sol as fallback.
