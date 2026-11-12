@@ -900,6 +900,9 @@ namespace PRI.Infrastructure.Migrations
                     b.Property<int>("ImportedPaymentCount")
                         .HasColumnType("integer");
 
+                    b.Property<bool>("InvoiceImportSkipped")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTime>("RangeFromUtc")
                         .HasColumnType("timestamp with time zone");
 

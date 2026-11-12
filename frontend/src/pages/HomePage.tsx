@@ -158,9 +158,6 @@ export function HomePage() {
                       <p className="mt-0.5 text-xs text-slate-500">{t('landing.previewSubtitle')}</p>
                     </div>
                   </div>
-                  <span className="rounded-full bg-brand-100 px-3.5 py-2 text-xs font-bold text-brand-800">
-                    {t('landing.sample')}
-                  </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 py-4">
@@ -196,7 +193,6 @@ export function HomePage() {
                   <div className="mb-5 flex items-center justify-between gap-4">
                     <div>
                       <p className="text-sm font-bold">{t('landing.chartTitle')}</p>
-                      <p className="mt-1 text-xs text-slate-500">{t('landing.previewChartNote')}</p>
                     </div>
                     <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600">
                       <Clock3 aria-hidden="true" size={14} />

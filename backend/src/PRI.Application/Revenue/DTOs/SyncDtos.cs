@@ -18,6 +18,7 @@ public sealed record SyncRunDto(
     int ImportedPaymentCount,
     int ImportedInvoiceCount,
     int SkippedCount,
+    bool InvoiceImportSkipped,
     string? Error);
 
 public sealed record PayPalConnectionDto(

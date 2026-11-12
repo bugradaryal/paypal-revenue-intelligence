@@ -17,6 +17,7 @@ public sealed class SyncRunConfiguration : IEntityTypeConfiguration<SyncRun>
         builder.Property(s => s.StartedAtUtc).IsRequired();
         builder.Property(s => s.RangeFromUtc).IsRequired();
         builder.Property(s => s.RangeToUtc).IsRequired();
+        builder.Property(s => s.InvoiceImportSkipped).IsRequired();
         builder.Property(s => s.Error).HasMaxLength(2000);
         builder.Property(s => s.CreatedAtUtc).IsRequired();
 

@@ -56,7 +56,9 @@ public sealed class PayPalSyncService(
             await ImportTransactionsAsync(context, from, now, now, cancellationToken);
             await ApplyRefundsAsync(context, now, cancellationToken);
 
-            run.Complete(context.ImportedPayments, context.ImportedInvoices, context.Skipped, timeProvider.GetUtcNow().UtcDateTime);
+            run.Complete(
+                context.ImportedPayments, context.ImportedInvoices, context.Skipped,
+                timeProvider.GetUtcNow().UtcDateTime, context.InvoiceImportSkipped);
             await unitOfWork.SaveChangesAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -139,7 +141,18 @@ public sealed class PayPalSyncService(
 
         while (true)
         {
-            var result = await payPal.ListInvoicesAsync(page, cancellationToken);
+            PayPalInvoicePage result;
+            try
+            {
+                result = await payPal.ListInvoicesAsync(page, cancellationToken);
+            }
+            catch (ExternalServiceException ex) when (ex.Code == "paypal_invoicing_forbidden")
+            {
+                context.InvoiceImportSkipped = true;
+                logger.LogWarning("PayPal invoice import skipped because the Sandbox app has no Invoicing access.");
+                break;
+            }
+
             context.Skipped += result.SkippedCount;
 
             await UpsertInvoicesAsync(context, result.Items, now, cancellationToken);
@@ -411,7 +424,7 @@ public sealed class PayPalSyncService(
 
     private static SyncRunDto ToDto(SyncRun run) =>
         new(run.Id, run.Status, run.StartedAtUtc, run.FinishedAtUtc, run.RangeFromUtc, run.RangeToUtc,
-            run.ImportedPaymentCount, run.ImportedInvoiceCount, run.SkippedCount, run.Error);
+            run.ImportedPaymentCount, run.ImportedInvoiceCount, run.SkippedCount, run.InvoiceImportSkipped, run.Error);
 
     /// <summary>Bir senkron çalışması boyunca sayfalar arasında paylaşılan önbellek ve sayaçlar.</summary>
     private sealed class SyncContext
@@ -428,5 +441,7 @@ public sealed class PayPalSyncService(
         public int ImportedInvoices { get; set; }
 
         public int Skipped { get; set; }
+
+        public bool InvoiceImportSkipped { get; set; }
     }
 }

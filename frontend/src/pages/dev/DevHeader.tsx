@@ -1,7 +1,6 @@
 import { ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router'
 import { LanguageMenu } from '@/components/layout/LanguageMenu'
-import { MockDataBadge } from '@/components/patterns/MockDataBadge'
 import { ThemeToggle } from '@/components/ui'
 import { useI18n, type MessageKey } from '@/i18n'
 import { cn } from '@/lib/cn'
@@ -29,7 +28,6 @@ export function DevHeader({ current }: { current: DevPage }) {
             <ArrowLeft className="size-4" /> {t('dev.nav.app')}
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
-            <MockDataBadge />
             <LanguageMenu />
             <ThemeToggle />
           </div>

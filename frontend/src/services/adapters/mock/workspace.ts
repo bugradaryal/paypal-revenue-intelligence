@@ -17,9 +17,8 @@ import {
 import { isMockFailing } from './failure'
 
 /**
- * MOCK assistant. It is not an AI: it recognises a few topics, answers from the fictional mock data and streams
- * the text word by word, so the Workspace UI (streaming, stop, proposed actions, cost receipts) can be built and
- * checked before the real streaming schema exists (contract 0.4). The "Mock data" badge is shown while it is used.
+ * The local assistant recognizes a few topics, responds from the bundled demo dataset, and streams
+ * text word by word for exercising the Workspace UI before the real streaming schema is available.
  */
 
 type Lang = 'en' | 'de' | 'tr' | 'es'
@@ -36,31 +35,31 @@ const KEYWORDS: Record<Exclude<Topic, 'help'>, string[]> = {
 
 const TEXT: Record<Lang, Record<Topic | 'action', string>> = {
   en: {
-    failures: 'Here is what I see for the last 30 days (sample data):\n- {count} failed payments worth {amount}\n- Most common reason: {reason} ({top} payments)',
+    failures: 'Here is what I see for the last 30 days:\n- {count} failed payments worth {amount}\n- Most common reason: {reason} ({top} payments)',
     action: '\n\nI prepared a suggested action for one open case. Nothing is sent until you approve it.',
-    recovery: 'Recovery over the last 30 days (sample data):\n- Lost: {lost}\n- Recovered: {recovered}\n- Recovery rate: {rate}\n- {open} suggestions are waiting for your decision.',
-    cost: 'AI usage over the last 30 days (sample data):\n- Cost: {cost} for {requests} requests\n- Cache hit rate: {rate}\n- Savings measured by the gateway: {savings}',
+    recovery: 'Recovery over the last 30 days:\n- Lost: {lost}\n- Recovered: {recovered}\n- Recovery rate: {rate}\n- {open} suggestions are waiting for your decision.',
+    cost: 'AI usage over the last 30 days:\n- Cost: {cost} for {requests} requests\n- Cache hit rate: {rate}\n- Savings measured by the gateway: {savings}',
     help: 'I can look at failed payments, revenue recovery and AI cost. Try one of the questions below.\n\nI never change anything on my own: every action needs your approval.',
   },
   de: {
-    failures: 'Das sehe ich für die letzten 30 Tage (Beispieldaten):\n- {count} fehlgeschlagene Zahlungen im Wert von {amount}\n- Häufigster Grund: {reason} ({top} Zahlungen)',
+    failures: 'Das sehe ich für die letzten 30 Tage:\n- {count} fehlgeschlagene Zahlungen im Wert von {amount}\n- Häufigster Grund: {reason} ({top} Zahlungen)',
     action: '\n\nIch habe für einen offenen Fall eine Aktion vorbereitet. Nichts wird gesendet, bis du sie freigibst.',
-    recovery: 'Rückgewinnung in den letzten 30 Tagen (Beispieldaten):\n- Verloren: {lost}\n- Zurückgewonnen: {recovered}\n- Rückgewinnungsquote: {rate}\n- {open} Vorschläge warten auf deine Entscheidung.',
-    cost: 'KI-Nutzung in den letzten 30 Tagen (Beispieldaten):\n- Kosten: {cost} für {requests} Anfragen\n- Cache-Trefferquote: {rate}\n- Vom Gateway gemessene Einsparungen: {savings}',
+    recovery: 'Rückgewinnung in den letzten 30 Tagen:\n- Verloren: {lost}\n- Zurückgewonnen: {recovered}\n- Rückgewinnungsquote: {rate}\n- {open} Vorschläge warten auf deine Entscheidung.',
+    cost: 'KI-Nutzung in den letzten 30 Tagen:\n- Kosten: {cost} für {requests} Anfragen\n- Cache-Trefferquote: {rate}\n- Vom Gateway gemessene Einsparungen: {savings}',
     help: 'Ich kann fehlgeschlagene Zahlungen, Umsatzrückgewinnung und KI-Kosten ansehen. Probiere eine der Fragen unten.\n\nIch ändere nie etwas von selbst: Jede Aktion braucht deine Freigabe.',
   },
   tr: {
-    failures: 'Son 30 gün için gördüklerim (örnek veri):\n- {amount} değerinde {count} başarısız ödeme\n- En sık neden: {reason} ({top} ödeme)',
+    failures: 'Son 30 gün için gördüklerim:\n- {amount} değerinde {count} başarısız ödeme\n- En sık neden: {reason} ({top} ödeme)',
     action: '\n\nAçık bir vaka için önerilen bir işlem hazırladım. Sen onaylamadan hiçbir şey gönderilmez.',
-    recovery: 'Son 30 günde kurtarma (örnek veri):\n- Kaybedilen: {lost}\n- Kurtarılan: {recovered}\n- Kurtarma oranı: {rate}\n- {open} öneri kararını bekliyor.',
-    cost: 'Son 30 günde yapay zekâ kullanımı (örnek veri):\n- Maliyet: {requests} istek için {cost}\n- Önbellek isabet oranı: {rate}\n- Ağ geçidinin ölçtüğü tasarruf: {savings}',
+    recovery: 'Son 30 günde kurtarma:\n- Kaybedilen: {lost}\n- Kurtarılan: {recovered}\n- Kurtarma oranı: {rate}\n- {open} öneri kararını bekliyor.',
+    cost: 'Son 30 günde yapay zekâ kullanımı:\n- Maliyet: {requests} istek için {cost}\n- Önbellek isabet oranı: {rate}\n- Ağ geçidinin ölçtüğü tasarruf: {savings}',
     help: 'Başarısız ödemelere, gelir kurtarmaya ve yapay zekâ maliyetine bakabilirim. Aşağıdaki sorulardan birini dene.\n\nKendi başıma hiçbir şeyi değiştirmem: her işlem senin onayını ister.',
   },
   es: {
-    failures: 'Esto es lo que veo en los últimos 30 días (datos de ejemplo):\n- {count} pagos fallidos por {amount}\n- Motivo más frecuente: {reason} ({top} pagos)',
+    failures: 'Esto es lo que veo en los últimos 30 días:\n- {count} pagos fallidos por {amount}\n- Motivo más frecuente: {reason} ({top} pagos)',
     action: '\n\nPreparé una acción sugerida para un caso abierto. No se envía nada hasta que la apruebes.',
-    recovery: 'Recuperación en los últimos 30 días (datos de ejemplo):\n- Perdido: {lost}\n- Recuperado: {recovered}\n- Tasa de recuperación: {rate}\n- {open} sugerencias esperan tu decisión.',
-    cost: 'Uso de IA en los últimos 30 días (datos de ejemplo):\n- Costo: {cost} por {requests} solicitudes\n- Tasa de aciertos de caché: {rate}\n- Ahorro medido por la pasarela: {savings}',
+    recovery: 'Recuperación en los últimos 30 días:\n- Perdido: {lost}\n- Recuperado: {recovered}\n- Tasa de recuperación: {rate}\n- {open} sugerencias esperan tu decisión.',
+    cost: 'Uso de IA en los últimos 30 días:\n- Costo: {cost} por {requests} solicitudes\n- Tasa de aciertos de caché: {rate}\n- Ahorro medido por la pasarela: {savings}',
     help: 'Puedo revisar pagos fallidos, recuperación de ingresos y costo de IA. Prueba una de las preguntas de abajo.\n\nNunca cambio nada por mi cuenta: cada acción necesita tu aprobación.',
   },
 }

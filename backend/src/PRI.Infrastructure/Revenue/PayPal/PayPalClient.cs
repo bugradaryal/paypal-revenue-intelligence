@@ -186,12 +186,16 @@ public sealed class PayPalClient(
                     "PayPal returned HTTP {Status} for {Url}: {Body}",
                     (int)response.StatusCode, relativeUrl, body.Length > 500 ? body[..500] : body);
 
+                var invoiceAccessDenied = response.StatusCode == HttpStatusCode.Forbidden
+                                          && relativeUrl.StartsWith("v2/invoicing/invoices", StringComparison.Ordinal);
                 var hint = response.StatusCode == HttpStatusCode.Forbidden
-                    ? " Is 'Transaction search' / 'Invoicing' enabled for the Sandbox app?"
+                    ? invoiceAccessDenied
+                        ? " The Sandbox app does not have Invoicing access."
+                        : " Check whether the required PayPal Sandbox API is enabled."
                     : string.Empty;
 
                 throw new ExternalServiceException(
-                    "paypal_unavailable",
+                    invoiceAccessDenied ? "paypal_invoicing_forbidden" : "paypal_unavailable",
                     $"PayPal returned HTTP {(int)response.StatusCode}.{hint}");
             }
 

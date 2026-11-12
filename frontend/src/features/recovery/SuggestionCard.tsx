@@ -29,11 +29,6 @@ export function SuggestionCard({ suggestion: s, deciding, busy, onApprove, onRej
         <div className="min-w-0">
           <p className="flex flex-wrap items-center gap-2 font-semibold">
             {s.customerName}
-            {s.dataSource === 'demo' && (
-              <Badge size="sm" tone="neutral">
-                {t('common.demo')}
-              </Badge>
-            )}
           </p>
           <p className="mt-0.5 text-xs text-ink-faint">
             <Link

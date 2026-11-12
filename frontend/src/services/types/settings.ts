@@ -51,6 +51,7 @@ export interface PayPalSyncRun {
   importedPaymentCount: number
   importedInvoiceCount: number
   skippedCount: number
+  invoiceImportSkipped: boolean
   error: string | null
 }
 

@@ -2,7 +2,6 @@ import { LogOut, Menu } from 'lucide-react'
 import { useLocation } from 'react-router'
 import { Avatar, Dropdown, IconButton, ThemeToggle } from '@/components/ui'
 import { useAuth } from '@/features/auth/AuthProvider'
-import { MockDataBadge } from '@/components/patterns/MockDataBadge'
 import { useI18n } from '@/i18n'
 import { LanguageMenu } from './LanguageMenu'
 import { LogoMark } from './Logo'
@@ -13,8 +12,8 @@ export function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
   const { pathname } = useLocation()
   const current = findNavItemByPath(pathname)
   const { required, user, signOut } = useAuth()
-  const displayName = required && user ? user.displayName : t('topbar.demoUser')
-  const roleLabel = required && user ? tryT(`auth.role.${user.role}`, user.role) : t('topbar.demoRole')
+  const displayName = required && user ? user.displayName : t('topbar.fallbackUser')
+  const roleLabel = required && user ? tryT(`auth.role.${user.role}`, user.role) : t('topbar.fallbackRole')
 
   return (
     <header className="sticky top-0 z-20 border-b border-line bg-surface-app/80 backdrop-blur">
@@ -37,7 +36,6 @@ export function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
         )}
 
         <div className="ml-auto flex items-center gap-2 sm:gap-3">
-          <MockDataBadge />
           <LanguageMenu />
           <ThemeToggle />
           <div className="hidden items-center gap-3 border-l border-line pl-3 sm:flex">

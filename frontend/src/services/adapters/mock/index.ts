@@ -18,7 +18,7 @@ import { isMockFailing } from './failure'
 import { mockSettings } from './settings'
 import { mockStreamChat } from './workspace'
 
-/** Mock adapter. See data.ts: all data is fictional and always flagged by the "Mock data" badge. */
+/** Local demo adapter; see data.ts for the dataset's scope. */
 
 /** Approved, executable suggestions finish a few seconds later, like the real backend does. */
 const executeAt = new Map<string, number>()

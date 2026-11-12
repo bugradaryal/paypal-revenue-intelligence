@@ -1,8 +1,7 @@
 /**
- * MOCK DATA. Everything in this file is fictional and generated deterministically.
- * It stands in for every operation the contract still lists as "Planned", and the app
- * always shows a "Mock data" badge while it is in use. Nothing here is a real payment,
- * a real customer or a real AI saving.
+ * The local demo dataset is fictional and generated deterministically. It stands in for
+ * operations that are not yet available through the API; it contains no real payments,
+ * customers, or measured AI savings.
  */
 import { getCurrentLocale } from '@/i18n/current'
 import { DAY_MS, startOfUtcDay } from '@/lib/dates'

@@ -12,7 +12,7 @@ import type { Api } from './types'
 
 export const api: Api = env.isMock ? mockApi : realApi
 
-/** True while any shown data comes from the mock adapter. Drives the "Mock data" badge. */
+/** True when the local demo adapter is selected. */
 export const hasMockOperations: boolean = env.isMock
 
 export type { Api, AiCostApi, RevenueApi } from './types'

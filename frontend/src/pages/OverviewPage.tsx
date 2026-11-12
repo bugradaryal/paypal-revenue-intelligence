@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { ArrowRight, Clock, CircleAlert, Sparkles, Undo2, Wallet } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { Badge, Button, Card, CardHeader, Skeleton, buttonStyles } from '@/components/ui'
+import { Button, Card, CardHeader, Skeleton, buttonStyles } from '@/components/ui'
 import {
   DataTable,
   EmptyState,
@@ -64,14 +64,7 @@ export function OverviewPage() {
       header: t('common.customer'),
       cell: (p) => (
         <div className="min-w-0">
-          <p className="flex items-center gap-2 font-medium">
-            <span className="truncate">{p.customerName}</span>
-            {p.dataSource === 'demo' && (
-              <Badge size="sm" tone="neutral">
-                {t('common.demo')}
-              </Badge>
-            )}
-          </p>
+          <p className="truncate font-medium">{p.customerName}</p>
           <p className="tabular text-xs text-ink-faint">{p.id}</p>
         </div>
       ),

@@ -242,8 +242,12 @@ function PayPalConnectionCard() {
     sync.mutate(30, {
       onSuccess: (result) =>
         toast({
-          tone: result.status === 'succeeded' ? 'success' : 'danger',
-          title: result.status === 'succeeded' ? t('settings.paypal.syncSucceeded') : result.error ?? t('settings.paypal.syncFailed'),
+          tone: result.status === 'succeeded' ? (result.invoiceImportSkipped ? 'warning' : 'success') : 'danger',
+          title: result.status !== 'succeeded'
+            ? result.error ?? t('settings.paypal.syncFailed')
+            : result.invoiceImportSkipped
+              ? t('settings.paypal.invoiceImportSkipped')
+              : t('settings.paypal.syncSucceeded'),
         }),
       onError: (error) => toast({ tone: 'danger', title: errorMessage(error) }),
     })
@@ -388,6 +392,9 @@ function PayPalConnectionCard() {
                     skipped: f.number(latestSync.skippedCount),
                   })}
                 </p>
+                {latestSync.invoiceImportSkipped && (
+                  <p role="status" className="text-warning">{t('settings.paypal.invoiceImportSkipped')}</p>
+                )}
                 {syncError && <p role="alert" className="text-danger">{syncError}</p>}
               </>
             ) : (

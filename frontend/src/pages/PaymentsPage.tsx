@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { Badge, Button, Card, Dialog, Skeleton } from '@/components/ui'
+import { Button, Card, Dialog, Skeleton } from '@/components/ui'
 import {
   ChipFilter,
   DataTable,
@@ -34,16 +34,6 @@ type RangeKey = keyof typeof RANGES
 
 const isStatus = (v: string): v is PaymentStatus => (STATUSES as string[]).includes(v)
 const isRange = (v: string | null): v is RangeKey => v !== null && v in RANGES
-
-function SourceBadge({ source }: { source: Payment['dataSource'] }) {
-  const { t } = useI18n()
-  if (source !== 'demo') return null
-  return (
-    <Badge size="sm" tone="neutral">
-      {t('common.demo')}
-    </Badge>
-  )
-}
 
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -97,10 +87,6 @@ function PaymentDrawer({ id, onClose }: { id: string | null; onClose: () => void
             <StatusPill kind="payment" status={p.status} />
           </div>
 
-          {p.dataSource === 'demo' && (
-            <p className="rounded-md bg-surface-muted p-3 text-xs text-ink-soft">{t('payments.detail.demoNote')}</p>
-          )}
-
           <dl>
             <DetailRow label={t('common.customer')}>{p.customerName}</DetailRow>
             <DetailRow label={t('payments.detail.customerId')}>
@@ -118,7 +104,6 @@ function PaymentDrawer({ id, onClose }: { id: string | null; onClose: () => void
                 <span className="text-ink-soft">{t('payments.detail.noTransaction')}</span>
               )}
             </DetailRow>
-            <DetailRow label={t('payments.detail.source')}>{t(`dataSource.${p.dataSource}`)}</DetailRow>
             <DetailRow label={t('payments.detail.created')}>{f.dateTime(p.createdAt)}</DetailRow>
             <DetailRow label={t('payments.detail.updated')}>{f.dateTime(p.updatedAt)}</DetailRow>
           </dl>
@@ -206,10 +191,7 @@ export function PaymentsPage() {
       header: t('payments.columns.payment'),
       cell: (p) => (
         <div className="min-w-0">
-          <p className="flex items-center gap-2 font-medium">
-            <span className="truncate">{p.customerName}</span>
-            <SourceBadge source={p.dataSource} />
-          </p>
+          <p className="truncate font-medium">{p.customerName}</p>
           <p className="tabular text-xs text-ink-faint">{p.id}</p>
         </div>
       ),

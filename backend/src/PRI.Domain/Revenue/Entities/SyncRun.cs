@@ -32,6 +32,8 @@ public sealed class SyncRun : BaseEntity
     /// <summary>Eksik veya tanınmayan alanlar nedeniyle içe alınmayan kayıt sayısı.</summary>
     public int SkippedCount { get; private set; }
 
+    public bool InvoiceImportSkipped { get; private set; }
+
     public string? Error { get; private set; }
 
     public static SyncRun Start(DateTime rangeFromUtc, DateTime rangeToUtc, DateTime nowUtc)
@@ -52,12 +54,14 @@ public sealed class SyncRun : BaseEntity
         };
     }
 
-    public void Complete(int importedPayments, int importedInvoices, int skipped, DateTime nowUtc)
+    public void Complete(
+        int importedPayments, int importedInvoices, int skipped, DateTime nowUtc, bool invoiceImportSkipped = false)
     {
         Status = SyncRunStatus.Succeeded;
         ImportedPaymentCount = importedPayments;
         ImportedInvoiceCount = importedInvoices;
         SkippedCount = skipped;
+        InvoiceImportSkipped = invoiceImportSkipped;
         FinishedAtUtc = nowUtc;
     }
 
